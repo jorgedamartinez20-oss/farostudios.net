@@ -187,7 +187,7 @@ const tilesG=$('tiles'),T=IC.map((id,i)=>{const x=313+i*78,cx=x+31,cy=507,g=el('
 let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
 const CF=[];const cfG=$('confetti');
 for(let i=0;i<46;i++){const a=-Math.PI/2+(rnd()-.5)*2.6,s=260+rnd()*380;CF.push({e:el('rect',{width:9+rnd()*7,height:5+rnd()*5,fill:['#8B1A2A','#F5F2EE','#FFE9B0','#B84A58','#D8D5CF'][i%5],opacity:0},cfG),vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:rnd()*360,vr:(rnd()-.5)*900})}
-const RP=[0,1,2,3].map(()=>({e:el('circle',{r:0,fill:'none',stroke:'#F5F2EE','stroke-width':4,opacity:0},$('ripples')),t0:-9}));
+const RP=[0,1,2,3].map(()=>({e:el('circle',{r:0,fill:'none',stroke:'#F5F2EE','stroke-width':4,opacity:0},$('ripples')),t0:-9,x:0,y:0}));
 let rpi=0;const ripple=(x,y)=>{const r=RP[rpi++%RP.length];r.x=x;r.y=y;r.t0=now};
 
 /* puntero */
