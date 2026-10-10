@@ -25,7 +25,7 @@ body{display:flex;flex-direction:column;align-items:stretch;place-items:normal;p
 #grain{position:fixed;inset:6px 0 0 0;width:100%;height:calc(100% - 6px);z-index:1;pointer-events:none;mix-blend-mode:overlay;opacity:.5}
 body::before{content:"";position:fixed;top:0;left:0;right:0;height:calc(10px + env(safe-area-inset-top));background:var(--bor);z-index:0;pointer-events:none}
 /* cinta superior */
-.ribbon{position:sticky;top:0;z-index:0;flex:none;background:var(--bor);color:var(--marfil);display:flex;align-items:center;justify-content:center;gap:14px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;text-align:center;box-shadow:0 4px 0 var(--bor-d),0 14px 24px -12px rgba(0,0,0,.6)}
+.ribbon{position:sticky;top:0;z-index:2;flex:none;background:var(--bor);color:var(--marfil);display:flex;align-items:center;justify-content:center;gap:14px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;text-align:center;box-shadow:0 4px 0 var(--bor-d),0 14px 24px -12px rgba(0,0,0,.6)}
 .ribbon .iso{height:38px;width:auto;aspect-ratio:160/311;background:var(--marfil);-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat;flex:none}
 .ribbon h1{margin:0;font:400 clamp(1.5rem,3.6vw,2.6rem)/1.02 var(--display);letter-spacing:.07em}
 /* ESPACIO DEL VIDEO: de borde a borde, sin nada encima */
@@ -44,7 +44,7 @@ body::before{content:"";position:fixed;top:0;left:0;right:0;height:calc(10px + e
 .empty span{border:2px dashed rgba(245,242,238,.25);border-radius:18px;padding:18px 24px}
 .stage.live .empty{display:none}
 /* franja inferior */
-.foot{position:relative;z-index:0;flex:none;background:#FBF9F4;padding:14px 16px calc(14px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:center;gap:12px 28px;flex-wrap:wrap;text-align:center;box-shadow:0 -4px 0 rgba(37,37,40,.14),0 -14px 24px -12px rgba(0,0,0,.5)}
+.foot{position:relative;z-index:2;flex:none;background:#FBF9F4;padding:14px 16px calc(14px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:center;gap:12px 28px;flex-wrap:wrap;text-align:center;box-shadow:0 -4px 0 rgba(37,37,40,.14),0 -14px 24px -12px rgba(0,0,0,.5)}
 .foot p{margin:0;color:var(--bor);font:400 1.2rem/1.3 var(--body);max-width:36ch}
 .cta{display:flex;gap:10px;flex-wrap:nowrap;justify-content:center}
 .cta a{font:400 1.05rem var(--body);text-decoration:none;color:var(--marfil);background:var(--bor);border-radius:14px;padding:11px 20px;box-shadow:0 4px 0 var(--bor-d);white-space:nowrap}
