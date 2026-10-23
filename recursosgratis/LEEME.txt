@@ -1,7 +1,3 @@
-Como agregar un recurso:
-1) Sube el archivo a la carpeta recursosgratis/archivos/
-2) Agrega un bloque en recursos.json, por ejemplo:
-[
-  {"etiqueta":"PDF","titulo":"Guia de sonido en vivo","descripcion":"Lo basico para tu primer evento.","archivo":"archivos/guia-sonido.pdf"}
-]
-Evita espacios y tildes en el nombre del archivo.
+Esta pagina muestra automaticamente lo que subes en el Workspace:
+Sitio web > Landing page > Recursos gratis (hasta 10 recursos: PDF, titulo y descripcion).
+Extras manuales opcionales: recursos.json (ver ejemplo en el repo).

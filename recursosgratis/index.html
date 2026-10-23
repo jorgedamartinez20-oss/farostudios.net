@@ -46,16 +46,29 @@ footer{text-align:center;padding:0 16px calc(28px + env(safe-area-inset-bottom))
 <script>
 (function(){
   var box=document.getElementById('lista');
+  var SB='https://keivqvsgdfhthouzlqxo.supabase.co',KEY='sb_publishable_5nj3M7rjQs3phGU6u2uNqw_3tjTL6PE';
+  var IDS=['r1','r2','r3','r4','r5','r6','s1','s2','s3','s4'];
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
   function safe(u){return /^(archivos\/|https:\/\/)/.test(u)?u:'#'}
-  fetch('recursos.json?v='+Date.now()).then(function(r){return r.json()}).then(function(items){
-    if(!items.length){box.innerHTML='<div class="empty">Estamos subiendo los recursos. Vuelve en unos minutos.</div>';return}
+  function vacio(){box.innerHTML='<div class="empty">Estamos subiendo los recursos. Vuelve en unos minutos.</div>'}
+  function pinta(items){
+    if(!items.length)return vacio();
     box.innerHTML=items.map(function(it){
       return '<article class="card">'+(it.etiqueta?'<span class="tag">'+esc(it.etiqueta)+'</span>':'')+
       '<h2>'+esc(it.titulo)+'</h2>'+(it.descripcion?'<p>'+esc(it.descripcion)+'</p>':'')+
-      '<a class="btn" href="'+esc(safe(it.archivo))+'" download>Descargar</a></article>'
+      '<a class="btn" href="'+esc(safe(it.archivo))+'" target="_blank" rel="noopener" download>Descargar</a></article>'
     }).join('')
-  }).catch(function(){box.innerHTML='<div class="empty">Estamos subiendo los recursos. Vuelve en unos minutos.</div>'})
+  }
+  /* 1) Lo que subes en el Workspace: Sitio web > Landing > Recursos gratis */
+  var wk=fetch(SB+'/rest/v1/sitio_config?select=clave,valor&or=(clave.like.pdf.*,clave.like.rt.*,clave.like.rd.*)',{headers:{apikey:KEY}})
+    .then(function(r){return r.ok?r.json():[]}).catch(function(){return[]}).then(function(rows){
+      var m={};rows.forEach(function(x){m[x.clave]=x.valor});
+      return IDS.filter(function(id){return m['pdf.'+id]}).map(function(id,i){
+        return {etiqueta:'PDF',titulo:m['rt.'+id]||('Recurso '+(i+1)),descripcion:m['rd.'+id]||'',archivo:m['pdf.'+id]}})
+    });
+  /* 2) Extras manuales (recursos.json), por si hace falta */
+  var mj=fetch('recursos.json?v='+Date.now()).then(function(r){return r.json()}).catch(function(){return[]});
+  Promise.all([wk,mj]).then(function(r){pinta(r[0].concat(r[1]))}).catch(vacio);
 })();
 </script>
 </body>
