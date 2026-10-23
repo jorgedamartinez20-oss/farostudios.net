@@ -227,7 +227,7 @@ dialog.rd::backdrop{background:rgba(20,20,22,.78);backdrop-filter:blur(3px)}
     ITEMS.forEach(function(it,i){
       var b=document.createElement('button');b.type='button';b.className='bkc';b.style.setProperty('--i',i);b.setAttribute('aria-label','Abrir '+it.titulo);
       b.innerHTML='<div class="bkc-cv" style="--cvbg:linear-gradient('+it.cv+')"><span class="bkc-tag">'+esc(it.etiqueta)+'</span><span class="iso" aria-hidden="true"></span><div><h3>'+esc(it.titulo)+'</h3><small>Faro Studios</small></div></div><div class="bkc-go"><span>Hojear y descargar</span></div>';
-      b.addEventListener('click',function(){openRd(it)});shelf.appendChild(b)
+      b._it=it;b.addEventListener('click',function(){openRd(it)});shelf.appendChild(b)
     })
   }
   var wk=fetch(SB+'/rest/v1/sitio_config?select=clave,valor&or=(clave.like.pdf.*,clave.like.rt.*,clave.like.rd.*)',{headers:{apikey:KEY}})
@@ -280,21 +280,46 @@ dialog.rd::backdrop{background:rgba(20,20,22,.78);backdrop-filter:blur(3px)}
     })
   }
   function stat(){var n=STATS[cur.k];$('#rd-st').textContent=n?('⬇ '+n+(n===1?' descarga':' descargas')):''}
+  /* carga del PDF: se descarga completo (con porcentaje) y se abre desde memoria; se adelanta al tocar/pasar por el libro */
+  var libP=null;
+  function pdfLib(){
+    if(!libP)libP=(window.pdfjsLib?Promise.resolve():loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js')).then(function(){
+      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'}).catch(function(e){libP=null;throw e});
+    return libP}
+  function getDoc(it){
+    if(it.docP)return it.docP;
+    it.prog=0;
+    var ctl=window.AbortController?new AbortController():null,to=setTimeout(function(){if(ctl)ctl.abort()},90000);
+    it.docP=pdfLib().then(function(){return fetch(safe(it.archivo),ctl?{signal:ctl.signal}:{})}).then(function(r){
+      if(!r.ok)throw new Error('http '+r.status);
+      var total=+r.headers.get('Content-Length')||0;
+      if(!r.body||!r.body.getReader)return r.arrayBuffer();
+      var rd=r.body.getReader(),chunks=[],got=0;
+      function pump(){return rd.read().then(function(x){
+        if(x.done)return;chunks.push(x.value);got+=x.value.length;it.prog=total?Math.min(99,Math.round(got/total*100)):0;if(cur===it)msg();return pump()})}
+      return pump().then(function(){var u=new Uint8Array(got),o=0;chunks.forEach(function(c){u.set(c,o);o+=c.length});return u.buffer})
+    }).then(function(buf){clearTimeout(to);return pdfjsLib.getDocument({data:buf}).promise}).catch(function(e){clearTimeout(to);it.docP=null;throw e});
+    return it.docP}
+  function msg(){
+    if(!cur||pages.length>1)return;
+    $('#note').textContent=cur.prog?('Cargando las páginas… '+cur.prog+'%'):'Cargando las páginas…'}
   function openRd(it){
     cur=it;idx=0;busy=false;tok++;pdfDoc=null;
-    $('#rd-tag').textContent=it.etiqueta==='Gratis'?'Recurso gratuito':it.etiqueta;$('#rd-t').textContent=it.titulo;$('#rd-d').textContent=it.descripcion;$('#note').textContent='';
-    pages=[{cover:1}];paint();stat();
+    $('#rd-tag').textContent=it.etiqueta==='Gratis'?'Recurso gratuito':it.etiqueta;$('#rd-t').textContent=it.titulo;$('#rd-d').textContent=it.descripcion;
+    pages=[{cover:1}];paint();stat();msg();
     if(!dlg.open)dlg.showModal();
     var t=tok;
-    (window.pdfjsLib?Promise.resolve():loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js')).then(function(){
-      pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-      return pdfjsLib.getDocument(safe(it.archivo)).promise}).then(function(doc){
-      if(t!==tok)return;pdfDoc=doc;var n=Math.min(doc.numPages,MAXP);
+    getDoc(it).then(function(doc){
+      if(t!==tok||cur!==it)return;pdfDoc=doc;var n=Math.min(doc.numPages,MAXP);
       for(var i=1;i<=n;i++)pages.push({n:i});
-      $('#note').textContent=doc.numPages>n?'Vista previa de las primeras '+n+' páginas. El resto va en la descarga.':'';
+      $('#note').textContent=doc.numPages>n?'Vista previa de las primeras '+n+' páginas. El resto va en la descarga.':'Toca la flecha o desliza para pasar la página.';
       paint()
-    }).catch(function(){if(t===tok)$('#note').textContent='La vista previa no está disponible, pero puedes descargarlo.'})
+    }).catch(function(){if(t===tok&&cur===it)$('#note').textContent='No se pudo cargar la vista previa. Puedes descargarlo con el botón.'})
   }
+  /* adelantar la carga al acercarse o tocar un libro */
+  shelf.addEventListener('pointerover',function(e){var b=e.target.closest('.bkc');if(b&&b._it&&!b._it.docP)getDoc(b._it).catch(function(){})});
+  shelf.addEventListener('touchstart',function(e){var b=e.target.closest('.bkc');if(b&&b._it&&!b._it.docP)getDoc(b._it).catch(function(){})},{passive:true});
+  setTimeout(function(){pdfLib().catch(function(){})},1200);
   $('#pv').addEventListener('click',function(){turn(-1)});
   $('#nx').addEventListener('click',function(){turn(1)});
   $('#rd-dl').addEventListener('click',function(){
