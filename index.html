@@ -52,10 +52,16 @@ body::before{content:"";position:fixed;top:0;left:0;right:0;height:calc(10px + e
 :focus-visible{outline:3px solid var(--marfil);outline-offset:3px;border-radius:10px}
 .foot :focus-visible{outline-color:var(--bor)}
 @media (max-width:520px){.cta{gap:6px}.cta a{padding:10px 9px;font-size:.92rem}.foot p{font-size:1.1rem}}
+.ribbon{padding-left:140px;padding-right:140px}
+.ribbon .ent{position:absolute;right:16px;top:50%;margin-top:calc(env(safe-area-inset-top)/2);transform:translateY(-50%);font:400 1.05rem var(--body);text-decoration:none;color:var(--bor);background:var(--marfil);border-radius:14px;padding:9px 18px;box-shadow:0 4px 0 rgba(0,0,0,.28);white-space:nowrap;z-index:3}
+.ribbon .ent:active{transform:translateY(calc(-50% + 3px));box-shadow:0 1px 0 rgba(0,0,0,.28)}
+.ribbon .ent:focus-visible{outline:3px solid var(--marfil);outline-offset:3px}
+@media (max-width:760px){.ribbon{padding-left:16px;padding-right:104px}.ribbon .ent{right:10px;padding:8px 13px;font-size:.95rem}}
+@media (max-width:420px){.ribbon .iso{display:none}.ribbon h1{font-size:1.3rem}}
 </style>
 </head>
 <body>
-<header class="ribbon"><span class="iso" aria-hidden="true"></span><h1>Estamos preparando una nueva experiencia para ti</h1></header>
+<header class="ribbon"><span class="iso" aria-hidden="true"></span><h1>Estamos preparando una nueva experiencia para ti</h1><a class="ent" href="entregas.html">Entregas</a></header>
 <section class="stage" id="stage" aria-label="Video">
   <video id="bg" muted loop playsinline autoplay preload="auto" aria-hidden="true" tabindex="-1" disablepictureinpicture poster="fondo-poster.jpg"></video>
   <div class="art" id="art" aria-hidden="true">
