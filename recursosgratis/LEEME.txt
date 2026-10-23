@@ -1,0 +1,7 @@
+Como agregar un recurso:
+1) Sube el archivo a la carpeta recursosgratis/archivos/
+2) Agrega un bloque en recursos.json, por ejemplo:
+[
+  {"etiqueta":"PDF","titulo":"Guia de sonido en vivo","descripcion":"Lo basico para tu primer evento.","archivo":"archivos/guia-sonido.pdf"}
+]
+Evita espacios y tildes en el nombre del archivo.
