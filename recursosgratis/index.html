@@ -298,7 +298,7 @@ dialog.rd::backdrop{background:rgba(20,20,22,.78);backdrop-filter:blur(3px)}
       function pump(){return rd.read().then(function(x){
         if(x.done)return;chunks.push(x.value);got+=x.value.length;it.prog=total?Math.min(99,Math.round(got/total*100)):0;if(cur===it)msg();return pump()})}
       return pump().then(function(){var u=new Uint8Array(got),o=0;chunks.forEach(function(c){u.set(c,o);o+=c.length});return u.buffer})
-    }).then(function(buf){clearTimeout(to);return pdfjsLib.getDocument({data:buf}).promise}).catch(function(e){clearTimeout(to);it.docP=null;throw e});
+    }).then(function(buf){clearTimeout(to);it.buf=buf.slice(0);return pdfjsLib.getDocument({data:buf}).promise}).catch(function(e){clearTimeout(to);it.docP=null;throw e});
     return it.docP}
   function msg(){
     if(!cur||pages.length>1)return;
@@ -322,9 +322,25 @@ dialog.rd::backdrop{background:rgba(20,20,22,.78);backdrop-filter:blur(3px)}
   setTimeout(function(){pdfLib().catch(function(){})},1200);
   $('#pv').addEventListener('click',function(){turn(-1)});
   $('#nx').addEventListener('click',function(){turn(1)});
-  $('#rd-dl').addEventListener('click',function(){
-    var a=document.createElement('a');a.href=safe(cur.archivo);a.download='';a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();
-    if(!cur.extra){STATS[cur.k]=(STATS[cur.k]||0)+1;stat();rpc('recurso_descarga',{p_recurso:cur.k,p_sid:sid()}).catch(function(){})}
+  /* descarga directa: se guarda el archivo desde esta misma página (sin abrir otra pestaña) */
+  function fileName(it){
+    var n=String(it.titulo||'recurso').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9 _()\-]+/g,'').trim().replace(/\s+/g,'-').slice(0,80)||'recurso';
+    return 'Faro-Studios-'+n+'.pdf'}
+  function saveBlob(blob,name){
+    var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.style.display='none';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(function(){URL.revokeObjectURL(u)},10000)}
+  var dlBtn=$('#rd-dl'),dlLab=dlBtn.lastChild,dlTxt=dlLab&&dlLab.nodeType===3?dlLab.nodeValue:null,dlBusy=false;
+  function dlState(on){dlBusy=on;dlBtn.disabled=on;if(dlTxt!==null)dlLab.nodeValue=on?'Descargando…':dlTxt}
+  dlBtn.addEventListener('click',function(){
+    if(dlBusy)return;var it=cur;dlState(true);
+    var bytes=it.buf?Promise.resolve(new Blob([it.buf],{type:'application/pdf'})):fetch(safe(it.archivo)).then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.blob()});
+    bytes.then(function(b){
+      saveBlob(b.type==='application/pdf'?b:new Blob([b],{type:'application/pdf'}),fileName(it));
+      if(!it.extra){STATS[it.k]=(STATS[it.k]||0)+1;if(cur===it)stat();rpc('recurso_descarga',{p_recurso:it.k,p_sid:sid()}).catch(function(){})}
+    }).catch(function(){
+      /* respaldo: si no se pudo guardar desde la página, se abre el archivo como antes */
+      var a=document.createElement('a');a.href=safe(it.archivo);a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()
+    }).then(function(){dlState(false)})
   });
   dlg.addEventListener('click',function(e){if(e.target===dlg||e.target.closest('[data-close]'))dlg.close()});
   dlg.addEventListener('close',function(){tok++});
