@@ -330,17 +330,37 @@ dialog.rd::backdrop{background:rgba(20,20,22,.78);backdrop-filter:blur(3px)}
     var u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.style.display='none';document.body.appendChild(a);a.click();a.remove();
     setTimeout(function(){URL.revokeObjectURL(u)},10000)}
   var dlBtn=$('#rd-dl'),dlLab=dlBtn.lastChild,dlTxt=dlLab&&dlLab.nodeType===3?dlLab.nodeValue:null,dlBusy=false;
-  function dlState(on){dlBusy=on;dlBtn.disabled=on;if(dlTxt!==null)dlLab.nodeValue=on?'Descargando…':dlTxt}
+  /* estado del botón: "Descargando… 45%" + barra de avance dentro del botón */
+  function dlPct(p){
+    if(dlTxt!==null)dlLab.nodeValue=p?('Descargando… '+p+'%'):'Descargando…';
+    dlBtn.style.backgroundImage=p?'linear-gradient(90deg,rgba(255,255,255,.28) '+p+'%,rgba(255,255,255,0) '+p+'%)':''}
+  function dlState(on){dlBusy=on;dlBtn.disabled=on;if(on)dlPct(0);else{if(dlTxt!==null)dlLab.nodeValue=dlTxt;dlBtn.style.backgroundImage=''}}
+  function fetchProg(url,cb){
+    return fetch(url).then(function(r){
+      if(!r.ok)throw new Error('http '+r.status);
+      var total=+r.headers.get('Content-Length')||0;
+      if(!r.body||!r.body.getReader)return r.blob();
+      var rd=r.body.getReader(),ch=[],got=0;
+      function pump(){return rd.read().then(function(x){
+        if(x.done)return;ch.push(x.value);got+=x.value.length;if(total)cb(Math.min(99,Math.round(got/total*100)));return pump()})}
+      return pump().then(function(){return new Blob(ch,{type:'application/pdf'})})})}
   dlBtn.addEventListener('click',function(){
     if(dlBusy)return;var it=cur;dlState(true);
-    var bytes=it.buf?Promise.resolve(new Blob([it.buf],{type:'application/pdf'})):fetch(safe(it.archivo)).then(function(r){if(!r.ok)throw new Error('http '+r.status);return r.blob()});
+    var bytes;
+    if(it.buf)bytes=Promise.resolve(new Blob([it.buf],{type:'application/pdf'}));
+    else if(it.docP){ /* el lector aún está cargando el archivo: se espera y se muestra su avance */
+      var iv=setInterval(function(){if(it.prog)dlPct(it.prog)},150);
+      bytes=it.docP.then(function(){if(!it.buf)throw new Error('sin datos');return new Blob([it.buf],{type:'application/pdf'})})
+        .catch(function(){return fetchProg(safe(it.archivo),dlPct)}).then(function(b){clearInterval(iv);return b},function(e){clearInterval(iv);throw e})}
+    else bytes=fetchProg(safe(it.archivo),dlPct);
     bytes.then(function(b){
+      dlPct(100);
       saveBlob(b.type==='application/pdf'?b:new Blob([b],{type:'application/pdf'}),fileName(it));
       if(!it.extra){STATS[it.k]=(STATS[it.k]||0)+1;if(cur===it)stat();rpc('recurso_descarga',{p_recurso:it.k,p_sid:sid()}).catch(function(){})}
     }).catch(function(){
       /* respaldo: si no se pudo guardar desde la página, se abre el archivo como antes */
       var a=document.createElement('a');a.href=safe(it.archivo);a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()
-    }).then(function(){dlState(false)})
+    }).then(function(){setTimeout(function(){dlState(false)},600)})
   });
   dlg.addEventListener('click',function(e){if(e.target===dlg||e.target.closest('[data-close]'))dlg.close()});
   dlg.addEventListener('close',function(){tok++});
