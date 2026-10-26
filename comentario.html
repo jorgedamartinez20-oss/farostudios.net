@@ -491,6 +491,19 @@ html{overflow-anchor:none}
 .mg .fine{margin-top:14px;font-size:.84rem}
 .mg-open body{overflow:hidden}
 .hero.fin .eti,.hero.fin h1,.hero.fin .sub{display:none!important}.hero.fin,.hero.fin.slim{padding-bottom:64px}
+
+/* ===== PRUEBA · 2: botón en píldora con barrido de luz · 7: ventana igual a dialog.apl de la web ===== */
+.send{border-radius:999px;padding:0 30px;font-weight:700;font-size:1.02rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 14px 26px -12px rgba(94,16,28,.7)}
+.send:hover{transform:translateY(-3px);box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 20px 32px -12px rgba(94,16,28,.75)}
+.mg-b{background:rgba(37,37,40,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.mg-s{max-width:430px;border-radius:28px;background:#FBF8F2;border:0;box-shadow:0 40px 90px -30px rgba(37,37,40,.55),0 0 0 1px rgba(37,37,40,.06);padding:30px 26px 24px;transform:none;transition:none}
+.mg.on .mg-s{animation:aplIn .5s cubic-bezier(.2,.9,.25,1.1)}
+@keyframes aplIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+.mg-x{top:14px;right:16px;width:30px;height:30px;font-size:1.2rem}
+.apl-ic{width:58px;height:58px;margin:0 auto 6px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,#8B1A2A,#B8A06A);color:#fff;box-shadow:0 14px 24px -12px #8B1A2A}
+.apl-ic svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mg-s h3{font:400 1.9rem/1 var(--display);letter-spacing:.04em;padding:0;margin-top:6px}
+.mg-l{font-size:.94rem;color:#6a665e}
 </style>
 </head>
 <body>
@@ -744,7 +757,7 @@ async function modalRegalo(d){
   const cod=d.codigo,n=parseFloat(d.descuento);
   const share='Hola, te comparto mi código de descuento de Faro Studios: '+cod+' ('+(n>0?n+'%':'descuento')+'). Puedes escribirles aquí: '+WA;
   m.innerHTML=`<div class="mg-b" data-x></div><div class="mg-s"><button type="button" class="mg-x" data-x aria-label="Cerrar"><svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-    <h3>Nos agrada trabajar contigo</h3><p class="mg-l">Este es tu regalo de agradecimiento. Guárdalo o compártelo.</p>
+    <div class="apl-ic"><svg viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></div><h3>Nos agrada trabajar contigo</h3><p class="mg-l">Este es tu regalo de agradecimiento. Guárdalo o compártelo.</p>
     <img id="mg-img" alt="Tu código ${esc(cod)}">
     <div class="mg-c"><span>${esc(cod)}</span><button type="button" id="mg-cp">Copiar</button></div>
     <div class="acts"><a class="btn o" id="mg-dl" download="faro-regalo-${esc(cod)}.png">Guardar imagen</a><a class="btn w" id="mg-wa" target="_blank" rel="noopener">Enviar a un amigo</a></div>
