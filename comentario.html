@@ -511,6 +511,10 @@ html{overflow-anchor:none}
 .f .row input:-webkit-autofill,.f .row input:-webkit-autofill:focus{-webkit-text-fill-color:#252528;box-shadow:0 0 0 100px #fff inset;caret-color:#252528;border-radius:0}
 .f .row input,.f .row input:focus,.f .row select,.f .row select:focus{background:transparent!important}
 .f .row:focus-within{background:rgba(184,160,106,.1)}
+.grp:has(.need),.grp:has(.need):focus-within{border-color:#C0392B!important;box-shadow:0 0 0 3px rgba(192,57,43,.14)!important}
+.f .need{border-color:#C0392B!important;box-shadow:none!important}
+.f .ft.err{color:#C0392B!important;font-weight:400}
+.f .ft.err:empty{display:none}
 </style>
 </head>
 <body>
@@ -611,7 +615,7 @@ function vistaForm(){
     <p class="ft" id="cnt"><b>Público</b>: lo mostraremos en nuestra web y redes con tu nombre.</p><p class="ft err" id="e5"></p>
     <label class="hd" for="f-mej">¿Qué podríamos mejorar?</label>
     <div class="grp"><textarea id="f-mej" rows="2" maxlength="1000" placeholder="Opcional"></textarea></div>
-    <p class="ft">Privado: solo nosotros lo vemos.</p>
+    <p class="ft">Privado: solo lo leemos nosotros. Tu opinión es muy valiosa porque nos ayuda a mejorar nuestros procesos y producciones. ¡Mil gracias!</p>
     <div id="te"></div>
     <button type="button" class="send" id="send"><span>Enviar mi comentario</span></button>
     <p class="legal">Al enviarlo, nos autorizas a compartir tu comentario y nombre en nuestra web y redes.</p>
@@ -671,7 +675,7 @@ function ligar(){
   $('#f-sub').onchange=e=>{F.sub=e.target.value;e.target.classList.remove('need');$('#e3').textContent=''};
   $('#f-otro').oninput=e=>{F.otro=e.target.value};
   stars.forEach((s,i)=>{
-    s.onclick=()=>{F.estrellas=i+1;pintaE(F.estrellas);luz(F.estrellas);$('#e4').textContent='';stars.forEach(x=>x.classList.remove('pop'));void s.offsetWidth;s.classList.add('pop')};
+    s.onclick=()=>{F.estrellas=i+1;pintaE(F.estrellas);luz(F.estrellas);$('#e4').textContent='';$('.stars').classList.remove('need');stars.forEach(x=>x.classList.remove('pop'));void s.offsetWidth;s.classList.add('pop')};
     s.onmouseenter=()=>pintaE(i+1);s.onfocus=()=>pintaE(i+1);
     s.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();F.estrellas=Math.min(5,(F.estrellas||0)+1);pintaE(F.estrellas);stars[F.estrellas-1].focus()}else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();F.estrellas=Math.max(1,(F.estrellas||2)-1);pintaE(F.estrellas);stars[F.estrellas-1].focus()}};
   });
@@ -691,8 +695,8 @@ function validar(){
   else if(bad['#f-nom'])e.e2='Escribe tu nombre.';
   if(bad['#dd-b'])e.e3=emp?'Elige qué servicios prestamos.':'Elige qué servicio prestamos.';
   else if(bad['#f-sub'])e.e3='Elige el tipo de proyecto musical.';
-  if(!F.estrellas)e.e4='Toca las estrellas para puntuarnos.';
-  if(bad['#f-txt'])e.e5='Cuéntanos un poco más (una frase basta).';
+  m('.stars',!F.estrellas);if(!F.estrellas)e.e4='Toca las estrellas para puntuarnos.';
+  if(bad['#f-txt'])e.e5='Escribe algo más detallado, por favor.';
   return e;
 }
 
