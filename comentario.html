@@ -532,6 +532,27 @@ html{overflow-anchor:none}
 @keyframes ldShine{to{transform:translateX(120%)}}
 .ld-bar{width:min(46vw,190px);height:3px;border-radius:3px;background:var(--ld-base);overflow:hidden}
 .ld-bar i{display:block;height:100%;width:calc(var(--p,0)*100%);border-radius:3px;background:linear-gradient(90deg,var(--ld-f2),var(--ld-f1));box-shadow:0 0 12px var(--ld-f2)}
+
+/* ===== Autorización + celebración ===== */
+.aut{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:16px 4px 0}
+.ck{flex:1 1 150px;min-width:150px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ck input{position:absolute;opacity:0;width:1px;height:1px}
+.ck .bx{flex:0 0 auto;width:26px;height:26px;border-radius:9px;background:#fff;border:1px solid var(--line);box-shadow:inset 0 1px 3px rgba(37,37,40,.08),0 1px 2px rgba(37,37,40,.06);display:grid;place-items:center;transition:background .25s,border-color .25s,transform .25s}
+.ck .bx svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .3s .05s}
+.ck input:checked+.bx{background:linear-gradient(180deg,#d6c28d,var(--oro));border-color:var(--oro);transform:scale(1.06)}
+.ck input:checked+.bx svg{stroke-dashoffset:0}
+.ck input:focus-visible+.bx{box-shadow:0 0 0 4px rgba(184,160,106,.3)}
+.ck .tx{font-size:.9rem;line-height:1.4;color:var(--ink)}
+.rw{display:none;flex:0 0 auto;align-items:center;gap:8px;padding:8px 11px;border-radius:14px;background:linear-gradient(100deg,rgba(184,160,106,.26),rgba(184,160,106,.1));border:1px solid rgba(184,160,106,.6);color:#6a5a2c;position:relative;overflow:hidden}
+.rw.on{display:flex;animation:rwpop .6s cubic-bezier(.2,1.4,.4,1) both}
+.rw .ico{width:1.5em;height:1.5em;color:var(--borg);flex:0 0 auto}
+.rw span{display:grid;line-height:1.2}.rw b{font-size:.95rem}.rw small{font-size:.78rem;opacity:.85}
+.rw::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.7) 50%,transparent 65%);transform:translateX(-120%);animation:rwsh 1.2s .35s ease-out 1 forwards}
+@keyframes rwpop{0%{opacity:0;transform:translateX(-14px) scale(.7)}100%{opacity:1;transform:none}}
+@keyframes rwsh{to{transform:translateX(120%)}}
+@media (prefers-reduced-motion:reduce){.rw.on,.rw::after{animation:none}}
+.f .aut .ck{display:flex;flex-direction:row;align-items:flex-start;gap:12px;text-transform:none;letter-spacing:0;font-weight:400;font-size:.9rem;color:var(--ink);margin:0;padding:0;min-height:0;width:auto}
+.f .aut .ck .tx{text-transform:none;letter-spacing:0;font-weight:400;font-size:.9rem;line-height:1.4;color:var(--ink);padding-top:3px}
 </style>
 </head>
 <body>
@@ -566,7 +587,7 @@ const rpc=async(fn,args)=>{const r=await fetch(U+'/rest/v1/rpc/'+fn,{method:'POS
 const ls=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k)||'null');if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 
 let F,INFO={descuento:'',condicion:'',meses:'5'};
-const fresh=()=>({tipo:'',empresa:'',pais:'Guatemala',cargo:'',multi:[],nombre:'',servicio:'',sub:'',otro:'',estrellas:0,texto:'',mejora:''});
+const fresh=()=>({tipo:'',empresa:'',pais:'Guatemala',cargo:'',multi:[],nombre:'',servicio:'',sub:'',otro:'',estrellas:0,texto:'',mejora:'',autoriza:false});
 const fvence=v=>{try{return new Date(v+'T12:00:00').toLocaleDateString('es-GT',{day:'numeric',month:'long',year:'numeric'})}catch(e){return v}};
 
 const $$=(s,r)=>[...(r||document).querySelectorAll(s)];
@@ -614,7 +635,6 @@ function vistaForm(){
     <div class="seg" role="group" aria-label="Tipo de cliente">
       <button type="button" data-t="individual" aria-pressed="true">Individual</button>
       <button type="button" data-t="empresa" aria-pressed="false">Empresa</button></div>
-    <div id="gift"></div>
     <span class="hd">Tus datos</span>
     <div class="grp">
       <div class="row sec" id="w-emp" hidden><label for="f-emp">Empresa</label><input id="f-emp" maxlength="80" autocomplete="organization" placeholder="Ej. Café Aurora"></div>
@@ -630,13 +650,14 @@ function vistaForm(){
     <div class="grp"><div class="row sec"><span class="lbl">Experiencia</span><div class="rate"><div class="stars" role="radiogroup" aria-label="Puntuación">${[1,2,3,4,5].map(i=>`<button type="button" class="star" role="radio" aria-checked="false" aria-label="${i} de 5 estrellas" data-n="${i}">${STAR}</button>`).join('')}</div><div class="slab" id="slab"></div></div></div></div><p class="ft err" id="e4"></p>
     <label class="hd" for="f-txt" id="l-txt">Tu comentario</label>
     <div class="grp"><textarea id="f-txt" rows="3" maxlength="1500" placeholder="¿Qué fue lo que más te gustó?"></textarea></div>
-    <p class="ft" id="cnt"><b>Público</b>: lo mostraremos en nuestra web y redes con tu nombre.</p><p class="ft err" id="e5"></p>
+    <p class="ft err" id="e5"></p>
+    <div class="aut"><label class="ck"><input type="checkbox" id="f-aut"><span class="bx"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="tx">Autorizo que mi comentario se muestre en las redes y web de Faro.</span></label><div class="rw" id="rw" aria-live="polite"></div></div>
     <label class="hd" for="f-mej">¿Qué podríamos mejorar?</label>
     <div class="grp"><textarea id="f-mej" rows="2" maxlength="1000" placeholder="Opcional"></textarea></div>
     <p class="ft">Privado: solo lo leemos nosotros. Tu opinión es muy valiosa porque nos ayuda a mejorar nuestros procesos y producciones. ¡Mil gracias!</p>
     <div id="te"></div>
     <button type="button" class="send" id="send"><span>Enviar mi comentario</span></button>
-    <p class="legal">Al enviarlo, nos autorizas a compartir tu comentario y nombre en nuestra web y redes.</p>
+    <p class="legal">Solo mostraremos tu comentario con tu nombre si marcas la autorización.</p>
   </div>`;
   bgInit();bgSet('');setTipo('individual');ligar();
 }
@@ -646,7 +667,7 @@ function setTipo(t){
   const emp=t==='empresa',n=parseFloat(INFO.descuento);
   $$('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===t)));
   ['emp','pais','cargo'].forEach(k=>$('#w-'+k).hidden=!emp);$('#w-nom').classList.toggle('span',!emp);
-  $('#gift').innerHTML=!emp&&(n>0||!INFO.ok)?`<div class="gift"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Recibes ${n>0?n+'% de descuento':'un descuento'}: uno para ti y otro para un amigo</span></div>`:'<div class="gift"><span>Tu opinión nos ayuda a seguir creando</span></div>';
+  const rw=$('#rw');rw.dataset.ok=(!emp&&(n>0||!INFO.ok))?'1':'';rw.innerHTML=`<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span><b>${n>0?n+'% de descuento':'Un descuento'}</b><small>para ti y un amigo</small></span>`;rw.classList.toggle('on',!!F.autoriza&&!!rw.dataset.ok);
   $('#l-prod').textContent=emp?'¿Qué servicios prestamos? (puedes elegir varios)':'¿Qué servicio prestamos?';
   $('#l-txt').textContent='Tu comentario';
   $('#f-txt').placeholder=emp?'¿Cómo fue trabajar con nosotros y qué resultado obtuvieron?':'¿Qué fue lo que más te gustó?';
@@ -700,6 +721,7 @@ function ligar(){
   $('.stars').onmouseleave=()=>pintaE(F.estrellas);
   $('.stars').addEventListener('focusout',()=>setTimeout(()=>{if(!$('.stars').contains(document.activeElement))pintaE(F.estrellas)},0));
   $('#f-txt').oninput=e=>{F.texto=e.target.value;e.target.classList.remove('need');$('#e5').textContent=''};
+  $('#f-aut').onchange=e=>{F.autoriza=e.target.checked;const rw=$('#rw');if(F.autoriza&&rw.dataset.ok){rw.classList.remove('on');void rw.offsetWidth;rw.classList.add('on');const r=e.target.parentNode.querySelector('.bx').getBoundingClientRect();confeti(r.left+r.width/2,r.top+r.height/2,70)}else rw.classList.remove('on')};
   $('#f-mej').oninput=e=>{F.mejora=e.target.value};
   $('#send').onclick=enviar;
 }
@@ -728,7 +750,7 @@ async function enviar(){
   const ser=emp?F.multi.map(x=>x==='Otro'&&otro?otro:x).join(', '):(F.servicio==='Otro'&&otro?otro:F.servicio);
   const cat=emp?F.multi.join('|'):F.servicio;
   try{
-    const r=await rpc('rs_enviar_publico',{p_tipo:F.tipo,p_empresa:F.tipo==='empresa'?F.empresa.trim():'',p_nombre:F.nombre.trim(),p_servicio:ser,p_estrellas:F.estrellas,p_texto:F.texto.trim(),p_mejora:F.mejora.trim(),p_categoria:cat,p_subtipo:F.sub,p_pais:emp?F.pais:'',p_cargo:emp?F.cargo.trim():''});
+    const r=await rpc('rs_enviar_publico',{p_tipo:F.tipo,p_empresa:F.tipo==='empresa'?F.empresa.trim():'',p_nombre:F.nombre.trim(),p_servicio:ser,p_estrellas:F.estrellas,p_texto:F.texto.trim(),p_mejora:F.mejora.trim(),p_categoria:cat,p_subtipo:F.sub,p_pais:emp?F.pais:'',p_autoriza:F.autoriza,p_cargo:emp?F.cargo.trim():''});
     if(r&&r.ok){const d={tipo:F.tipo,codigo:r.codigo||'',descuento:r.descuento||'',condicion:r.condicion||'',vence:r.vence||'',nombre:F.nombre.trim().split(/\s+/)[0]};ls(LSK,d);cortina(()=>vistaGracias(d,false)).then(()=>{if(d.codigo)setTimeout(()=>modalRegalo(d),250)});return}
     const msg={limite:'Hay muchos comentarios llegando en este momento. Inténtalo de nuevo en unos minutos.',repetido:'Ya recibimos este mismo comentario. ¡Gracias!'}[r&&r.error];
     if(msg){b.disabled=false;b.querySelector('span').textContent='Enviar mi comentario';$('#te').innerHTML='<div class="top-err">'+msg+'</div>';return}
@@ -800,9 +822,9 @@ async function modalRegalo(d){
   try{const url=await cuponPNG(d);$('#mg-img').src=url;$('#mg-dl').href=url}catch(e){$('#mg-img').remove();$('#mg-dl').remove()}
 }
 
-function confeti(){
+function confeti(ox,oy,nn){
   const c=$('#cf'),x=c.getContext('2d');c.hidden=false;const dpr=Math.min(2,devicePixelRatio||1);c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.scale(dpr,dpr);
-  const col=['#B8A06A','#E0CD9A','#8B1A2A','#D98A96','#F5F2EE'],P=Array.from({length:110},()=>({x:innerWidth/2+(Math.random()-.5)*80,y:innerHeight*.28,vx:(Math.random()-.5)*9,vy:-Math.random()*9-3,w:5+Math.random()*7,h:3+Math.random()*5,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:col[(Math.random()*col.length)|0]}));
+  const col=['#B8A06A','#E0CD9A','#8B1A2A','#D98A96','#F5F2EE'],P=Array.from({length:nn||110},()=>({x:(ox==null?innerWidth/2:ox)+(Math.random()-.5)*80,y:oy==null?innerHeight*.28:oy,vx:(Math.random()-.5)*9,vy:-Math.random()*9-3,w:5+Math.random()*7,h:3+Math.random()*5,r:Math.random()*6,vr:(Math.random()-.5)*.4,c:col[(Math.random()*col.length)|0]}));
   let t=0;(function f(){t++;x.clearRect(0,0,innerWidth,innerHeight);P.forEach(p=>{p.vy+=.22;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.globalAlpha=Math.max(0,1-t/170);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()});if(t<170)requestAnimationFrame(f);else{x.clearRect(0,0,innerWidth,innerHeight);c.hidden=true}})();
 }
 
