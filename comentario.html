@@ -515,9 +515,27 @@ html{overflow-anchor:none}
 .f .need{border-color:#C0392B!important;box-shadow:none!important}
 .f .ft.err{color:#C0392B!important;font-weight:400}
 .f .ft.err:empty{display:none}
+
+/* ===== Cortina de carga (el farito del landing) ===== */
+#loader{--ld-bg:#252528;--ld-f1:#EAD9A6;--ld-f2:#B8A06A;--ld-f3:#8F7A48;--ld-base:rgba(245,242,238,.14);--ld-glow:rgba(139,26,43,.55);position:fixed;inset:0;z-index:300;display:grid;place-items:center;background:radial-gradient(60vmax 60vmax at 50% 46%,var(--ld-glow),transparent 70%),var(--ld-bg);opacity:1;visibility:hidden;pointer-events:none;clip-path:circle(0 at 50% 50%)}
+#loader.on{visibility:visible;pointer-events:all;opacity:1;clip-path:circle(160vmax at 50% 50%);transition:clip-path .85s cubic-bezier(.65,0,.25,1)}
+#loader.out{visibility:visible;opacity:0;clip-path:circle(160vmax at 50% 50%);transition:opacity .55s ease}
+.ld-wrap{position:relative;display:grid;justify-items:center;gap:22px;filter:drop-shadow(0 22px 22px rgba(0,0,0,.35))}
+.ld-wrap::after{content:"";position:absolute;left:50%;bottom:34px;width:120px;height:18px;margin-left:-60px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.45),transparent);filter:blur(4px);z-index:-1;animation:ldFloor 1.6s ease-in-out infinite}
+@keyframes ldFloor{50%{transform:scaleX(1.25);opacity:.6}}
+.ld-mark{position:relative;width:min(30vw,132px);aspect-ratio:463/900;-webkit-mask:var(--iso) center/contain no-repeat;mask:var(--iso) center/contain no-repeat;overflow:hidden}
+.ld-base{position:absolute;inset:0;background:var(--ld-base)}
+.ld-fill{position:absolute;left:0;right:0;top:0;height:calc(var(--p,0)*100%);background:linear-gradient(180deg,var(--ld-f1),var(--ld-f2) 55%,var(--ld-f3))}
+.ld-fill::before{content:"";position:absolute;left:0;right:0;bottom:-9px;height:14px;transform:scaleY(-1);background:radial-gradient(14px 12px at 14px 12px,var(--ld-f3) 98%,transparent 100%) 0 0/28px 14px repeat-x;animation:wave .9s linear infinite}
+@keyframes wave{to{background-position:28px 0}}
+.ld-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);transform:translateX(-120%);animation:ldShine 1.4s ease-in-out infinite}
+@keyframes ldShine{to{transform:translateX(120%)}}
+.ld-bar{width:min(46vw,190px);height:3px;border-radius:3px;background:var(--ld-base);overflow:hidden}
+.ld-bar i{display:block;height:100%;width:calc(var(--p,0)*100%);border-radius:3px;background:linear-gradient(90deg,var(--ld-f2),var(--ld-f1));box-shadow:0 0 12px var(--ld-f2)}
 </style>
 </head>
 <body>
+<div id="loader" class="on" aria-hidden="true"><div class="ld-wrap"><div class="ld-mark"><div class="ld-base"></div><div class="ld-fill"></div></div><div class="ld-bar"><i></i></div></div></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E0CD9A"/><stop offset=".55" stop-color="#B8A06A"/><stop offset="1" stop-color="#A58E5A"/></linearGradient></defs></svg>
 <header class="hero" id="hero">
   <img class="logo" src="doc-logo.png" alt="Faro Studios">
@@ -711,7 +729,7 @@ async function enviar(){
   const cat=emp?F.multi.join('|'):F.servicio;
   try{
     const r=await rpc('rs_enviar_publico',{p_tipo:F.tipo,p_empresa:F.tipo==='empresa'?F.empresa.trim():'',p_nombre:F.nombre.trim(),p_servicio:ser,p_estrellas:F.estrellas,p_texto:F.texto.trim(),p_mejora:F.mejora.trim(),p_categoria:cat,p_subtipo:F.sub,p_pais:emp?F.pais:'',p_cargo:emp?F.cargo.trim():''});
-    if(r&&r.ok){const d={tipo:F.tipo,codigo:r.codigo||'',descuento:r.descuento||'',condicion:r.condicion||'',vence:r.vence||'',nombre:F.nombre.trim().split(/\s+/)[0]};ls(LSK,d);vistaGracias(d,true);return}
+    if(r&&r.ok){const d={tipo:F.tipo,codigo:r.codigo||'',descuento:r.descuento||'',condicion:r.condicion||'',vence:r.vence||'',nombre:F.nombre.trim().split(/\s+/)[0]};ls(LSK,d);cortina(()=>vistaGracias(d,false)).then(()=>{if(d.codigo)setTimeout(()=>modalRegalo(d),250)});return}
     const msg={limite:'Hay muchos comentarios llegando en este momento. Inténtalo de nuevo en unos minutos.',repetido:'Ya recibimos este mismo comentario. ¡Gracias!'}[r&&r.error];
     if(msg){b.disabled=false;b.querySelector('span').textContent='Enviar mi comentario';$('#te').innerHTML='<div class="top-err">'+msg+'</div>';return}
     throw new Error('x');
@@ -731,7 +749,7 @@ function vistaGracias(d,nuevo){
     <div class="acts">${cod?'<button type="button" class="btn o" id="vermod">Ver mi regalo</button>':''}<a class="btn" href="./">Conocer más de Faro</a></div>
     <button type="button" class="again" id="again">Dejar otro comentario</button></div>`;
   if(cod)$('#vermod').onclick=()=>modalRegalo(d);
-  $('#again').onclick=()=>{ls(LSK,null);cierraModal();vistaForm();scrollTo({top:0})};
+  $('#again').onclick=()=>{ls(LSK,null);cierraModal();cortina(()=>{vistaForm();scrollTo({top:0})})};
   scrollTo({top:0,behavior:'auto'});
   if(nuevo&&cod)setTimeout(()=>modalRegalo(d),550);
 }
@@ -788,12 +806,25 @@ function confeti(){
   let t=0;(function f(){t++;x.clearRect(0,0,innerWidth,innerHeight);P.forEach(p=>{p.vy+=.22;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.globalAlpha=Math.max(0,1-t/170);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.h/2,p.w,p.h);x.restore()});if(t<170)requestAnimationFrame(f);else{x.clearRect(0,0,innerWidth,innerHeight);c.hidden=true}})();
 }
 
-(async function(){
+
+function cortina(work,ini){return new Promise(res=>{
+  const L=$('#loader');
+  if(!ini){L.style.setProperty('--p',0);L.classList.remove('on','out');void L.offsetWidth;L.classList.add('on')}
+  const t0=performance.now();let pr=0,ready=false;
+  (async()=>{try{await work()}catch(e){}try{await document.fonts.ready}catch(e){}ready=true})();
+  setTimeout(()=>{ready=true},6000);
+  (function tick(now){
+    const el=now-t0,time=Math.min(1,Math.max(0,(el-250)/800)),cap=ready?1:.9;
+    pr+=(Math.min(time,cap)-pr)*.16;L.style.setProperty('--p',pr.toFixed(4));
+    if(pr>.985&&ready&&el>1000){L.style.setProperty('--p',1);setTimeout(()=>L.classList.add('out'),160);setTimeout(()=>{L.classList.remove('on','out');res()},800);return}
+    requestAnimationFrame(tick)})(performance.now());
+})}
+cortina(async function(){
   const g=ls(LSK);
   try{const r=await rpc('rs_info');if(r)INFO={ok:true,descuento:r.descuento||'',condicion:r.condicion||'',meses:r.meses||'5'}}catch(e){}
   if(g&&g.tipo){vistaGracias(g,false);return}
   vistaForm();
-})();
+},true);
 </script>
 </body>
 </html>
