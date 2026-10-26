@@ -553,6 +553,23 @@ html{overflow-anchor:none}
 @media (prefers-reduced-motion:reduce){.rw.on,.rw::after{animation:none}}
 .f .aut .ck{display:flex;flex-direction:row;align-items:flex-start;gap:12px;text-transform:none;letter-spacing:0;font-weight:400;font-size:.9rem;color:var(--ink);margin:0;padding:0;min-height:0;width:auto}
 .f .aut .ck .tx{text-transform:none;letter-spacing:0;font-weight:400;font-size:.9rem;line-height:1.4;color:var(--ink);padding-top:3px}
+
+/* ===== Aviso: gana un descuento ===== */
+.dm{position:relative;display:flex;align-items:center;gap:12px;margin:18px 0 6px;padding:18px 16px;border-radius:18px;background:#fff;border:1px solid var(--line);box-shadow:0 12px 24px -16px rgba(37,37,40,.35);text-align:left;overflow:hidden}
+.dm .bx{flex:0 0 auto;width:26px;height:26px;border-radius:9px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;animation:dmbx 4s infinite}
+.dm .bx svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;animation:dmck 4s infinite}
+.dm .ln{flex:1;display:grid;gap:7px}.dm .ln i{display:block;height:8px;border-radius:4px;background:rgba(37,37,40,.12)}.dm .ln i+i{width:68%}
+.dm .rw{display:flex;animation:dmrw 4s infinite;opacity:0}
+.dm .cur{position:absolute;left:0;top:0;width:26px;height:26px;color:#252528;filter:drop-shadow(0 3px 3px rgba(0,0,0,.3));animation:dmcur 4s infinite;pointer-events:none}
+.dm .cur svg{width:100%;height:100%;fill:#fff;stroke:#252528;stroke-width:1.4;stroke-linejoin:round}
+@keyframes dmcur{0%{transform:translate(230px,70px);opacity:0}8%{opacity:1}42%{transform:translate(28px,28px) scale(1)}48%{transform:translate(28px,28px) scale(.82)}54%{transform:translate(28px,28px) scale(1)}90%{transform:translate(28px,28px);opacity:1}100%{transform:translate(28px,28px);opacity:0}}
+@keyframes dmbx{0%,47%{background:#fff;border-color:var(--line);transform:none}50%{transform:scale(.88)}56%,90%{background:linear-gradient(180deg,#d6c28d,var(--oro));border-color:var(--oro);transform:scale(1.06)}100%{background:#fff;border-color:var(--line);transform:none}}
+@keyframes dmck{0%,48%{stroke-dashoffset:24}56%,90%{stroke-dashoffset:0}100%{stroke-dashoffset:24}}
+@keyframes dmrw{0%,54%{opacity:0;transform:translateX(-12px) scale(.7)}62%,90%{opacity:1;transform:none}100%{opacity:0}}
+.mg .go{display:grid;gap:10px;margin-top:16px}
+.mg .go .btn{width:100%}
+.mg .skip{border:0;background:none;color:#6a665e;font-size:.9rem;text-decoration:underline;text-underline-offset:3px;padding:8px}
+@media (prefers-reduced-motion:reduce){.dm .bx,.dm .bx svg,.dm .rw,.dm .cur{animation:none}.dm .rw{opacity:1}.dm .cur{display:none}}
 </style>
 </head>
 <body>
@@ -745,6 +762,7 @@ async function enviar(){
   const er=validar();['e1','e2','e3','e4','e5'].forEach(k=>{const n=$('#'+k);if(n)n.textContent=er[k]||''});
   const prim=Object.keys(er)[0];
   if(prim)return;
+  if(F.tipo==='individual'&&!F.autoriza&&!F.avisado&&(parseFloat(INFO.descuento)>0||!INFO.ok)){modalAviso();return}
   const b=$('#send');b.disabled=true;b.querySelector('span').textContent='Enviando…';$('#te').innerHTML='';
   const emp=F.tipo==='empresa',otro=F.otro.trim().slice(0,60);
   const ser=emp?F.multi.map(x=>x==='Otro'&&otro?otro:x).join(', '):(F.servicio==='Otro'&&otro?otro:F.servicio);
@@ -802,6 +820,24 @@ async function cuponPNG(d){
 }
 
 function cierraModal(){const m=$('#mg');if(m){m.classList.remove('on');setTimeout(()=>m.remove(),250)}document.documentElement.classList.remove('mg-open')}
+
+function modalAviso(){
+  cierraModal();
+  const n=parseFloat(INFO.descuento),dto=n>0?n+'% de descuento':'un descuento';
+  const m=document.createElement('div');m.id='mg';m.className='mg';m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-label','Gana un descuento');
+  const GIFT='<svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg>';
+  m.innerHTML=`<div class="mg-b" data-x="skip"></div><div class="mg-s"><button type="button" class="mg-x" data-x="skip" aria-label="Cerrar"><svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <div class="apl-ic">${GIFT}</div><h3>Antes de enviar</h3>
+    <p class="mg-l"><b>Gana ${dto}</b> por permitirnos publicar tu comentario. Solo marca la casilla.</p>
+    <div class="dm" aria-hidden="true"><span class="bx"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span class="ln"><i></i><i></i></span><div class="rw">${GIFT}<span><b>${n>0?n+'%':'Descuento'}</b><small>para ti y un amigo</small></span></div><span class="cur"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.8L9.8 19z"/></svg></span></div>
+    <div class="go"><button type="button" class="btn o" data-x="yes">Sí, quiero mi descuento</button><button type="button" class="skip" data-x="skip">Enviar sin descuento</button></div></div>`;
+  document.body.append(m);document.documentElement.classList.add('mg-open');
+  requestAnimationFrame(()=>m.classList.add('on'));
+  m.addEventListener('click',e=>{const x=e.target.closest('[data-x]');if(!x)return;const a=x.dataset.x;cierraModal();
+    if(a==='yes'){const c=$('#f-aut');c.checked=true;c.dispatchEvent(new Event('change'));setTimeout(enviar,900)}
+    else{F.avisado=true;enviar()}});
+  document.addEventListener('keydown',function k(e){if(e.key==='Escape'){cierraModal();document.removeEventListener('keydown',k)}});
+}
 async function modalRegalo(d){
   cierraModal();
   const m=document.createElement('div');m.id='mg';m.className='mg';m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');m.setAttribute('aria-label','Tu regalo de agradecimiento');
