@@ -440,6 +440,19 @@ body::before{background:rgba(139,26,42,.10);filter:blur(90px)}body::after{backgr
 .bgi::before{background:radial-gradient(70% 70% at 8% 100%,rgba(184,160,106,.12),transparent 70%)}
 .bgl,.bgl.iso{--c:var(--oro)!important;color:var(--oro)!important}
 .bgl.on{opacity:.12}.bgl.iso.on{opacity:.09}
+
+/* ===== D · sin saltos ===== */
+.dd-p .otro{display:none;padding:4px 8px 8px}
+.dd-p .otro.on{display:block}
+.dd-p .otro input{width:100%;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.9);color:var(--ink);font-size:1rem;box-shadow:inset 0 1px 3px rgba(37,37,40,.08)}
+.dd-p .otro input:focus{outline:0;border-color:var(--oro);box-shadow:0 0 0 3px rgba(184,160,106,.25)}
+.f .ft.err{height:0;margin:0 16px;overflow:visible;position:relative;top:5px;line-height:1.3;white-space:nowrap}
+.f>.grp{margin-top:22px}.f>.hd+.grp{margin-top:0}
+#gift{min-height:38px}
+html{overflow-anchor:none}
+.card:has(.f) .f .ft.err{margin:0 16px}
+.dd-p{max-height:min(460px,72vh)}
+.card:has(.f) .f .hd{margin-top:28px}.f>.hd:first-of-type{margin-top:20px}.f .ft.err{top:3px}
 </style>
 </head>
 <body>
@@ -531,7 +544,7 @@ function vistaForm(){
     </div><p class="ft err" id="e2"></p>
     <div class="sec" id="w-prod"><span class="hd" id="l-prod">¿Qué hicimos juntos?</span>
       <div class="grp"><div class="dd" id="dd"><button type="button" class="dd-b" id="dd-b" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="l-prod"><span class="dd-v" id="dd-v"></span>${CHEV}</button><div class="dd-p" id="dd-p" role="listbox"></div></div>
-        <div class="reveal sm" id="rv-otro"><div><div class="in"><input id="f-otro" maxlength="60" aria-label="Cuéntanos qué fue" placeholder="Cuéntanos qué fue"></div></div></div>
+        
         <div class="reveal sm" id="rv-sub"><div><div class="in"><select id="f-sub" aria-label="Tipo de proyecto musical"><option value="">¿Qué tipo de proyecto musical?</option>${SUB.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div></div></div></div>
       <p class="ft err" id="e3"></p></div>
     <div class="grp"><div class="row sec"><span class="lbl">Experiencia</span><div class="rate"><div class="stars" role="radiogroup" aria-label="Puntuación">${[1,2,3,4,5].map(i=>`<button type="button" class="star" role="radio" aria-checked="false" aria-label="${i} de 5 estrellas" data-n="${i}">${STAR}</button>`).join('')}</div><div class="slab" id="slab"></div></div></div></div><p class="ft err" id="e4"></p>
@@ -553,18 +566,18 @@ function setTipo(t){
   const emp=t==='empresa',n=parseFloat(INFO.descuento);
   $$('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===t)));
   ['emp','pais','cargo'].forEach(k=>$('#w-'+k).hidden=!emp);$('#w-nom').classList.toggle('span',!emp);
-  $('#gift').innerHTML=!emp&&n>0?`<div class="gift"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Recibes ${n}% de descuento: uno para ti y otro para un amigo</span></div>`:'';
+  $('#gift').innerHTML=!emp&&n>0?`<div class="gift"><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg><span>Recibes ${n}% de descuento: uno para ti y otro para un amigo</span></div>`:'<div class="gift"><span>Tu opinión nos ayuda a seguir creando</span></div>';
   $('#l-prod').textContent=emp?'¿Qué producciones cubrimos? (puedes elegir varias)':'¿Qué hicimos juntos?';
   $('#l-txt').textContent='Tu comentario';
   $('#f-txt').placeholder=emp?'¿Cómo fue trabajar con nosotros y qué resultado obtuvieron?':'¿Qué fue lo que más te gustó?';
   $('#dd').classList.toggle('single',!emp);
-  $('#dd-p').innerHTML=SERV[t].map(s=>`<button type="button" class="op" role="option" aria-selected="false" data-s="${esc(s)}">${ico(s)}<span>${esc(s)}</span><i>✓</i></button>`).join('');
+  $('#dd-p').innerHTML=SERV[t].map(s=>`<button type="button" class="op" role="option" aria-selected="false" data-s="${esc(s)}">${ico(s)}<span>${esc(s)}</span><i>✓</i></button>`).join('')+'<div class="otro" id="rv-otro"><input id="f-otro" maxlength="60" aria-label="Cuéntanos qué fue" placeholder="Cuéntanos qué fue" autocomplete="off"></div>';
   $('#rv-otro').classList.remove('on');$('#rv-sub').classList.remove('on');$('#f-sub').value='';
   cierra();pintaDD();bgSet('');
 }
 function pintaDD(){
   const sel=F.tipo==='empresa'?F.multi:(F.servicio?[F.servicio]:[]);
-  $('#dd-v').innerHTML=sel.length?sel.map(s=>`<span class="tg">${ico(s)}${esc(s)}</span>`).join(''):'<span class="ph">Elige una opción</span>';
+  $('#dd-v').innerHTML=sel.length?sel.map(s=>`<span class="tg">${ico(s)}${esc(s==='Otro'&&F.otro.trim()?F.otro.trim():s)}</span>`).join(''):'<span class="ph">Elige una opción</span>';
   $$('.op').forEach(o=>o.setAttribute('aria-selected',String(sel.includes(o.dataset.s))));
   $('#rv-otro').classList.toggle('on',sel.includes('Otro'));
   const mus=F.tipo==='individual'&&F.servicio==='Producción musical';
@@ -578,6 +591,8 @@ function pintaE(n){stars.forEach((s,i)=>{s.classList.toggle('on',i<n);s.setAttri
 function luz(n){
   $$('.grp').filter(el=>el.offsetParent).forEach((el,i)=>{el.style.setProperty('--d',i*110+'ms');el.style.setProperty('--g',n/5);el.classList.remove('luz');void el.offsetWidth;el.classList.add('luz')});
 }
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='f-otro'){F.otro=e.target.value;pintaDD()}});
+document.addEventListener('keydown',e=>{if(e.target&&e.target.id==='f-otro'&&e.key==='Enter'){e.preventDefault();cierra()}});
 function ligar(){
   stars=$$('.star');
   $$('.seg button').forEach(b=>b.onclick=()=>{if(F.tipo!==b.dataset.t)setTipo(b.dataset.t)});
@@ -591,9 +606,9 @@ function ligar(){
   $('#dd-p').onclick=e=>{
     const b=e.target.closest('.op');if(!b)return;const v=b.dataset.s;
     if(F.tipo==='empresa'){const i=F.multi.indexOf(v);if(i<0)F.multi.push(v);else F.multi.splice(i,1);F.servicio=F.multi.join(', ');bgSet(F.multi.length?F.multi[F.multi.length-1]:'')}
-    else{F.servicio=v;bgSet(v);cierra()}
+    else{F.servicio=v;bgSet(v);if(v!=='Otro')cierra()}
     $('#dd-b').classList.remove('need');$('#e3').textContent='';pintaDD();
-    if(v==='Otro'&&$('#rv-otro').classList.contains('on'))setTimeout(()=>$('#f-otro').focus({preventScroll:true}),400);
+    if(v==='Otro'&&$('#rv-otro').classList.contains('on')){const pp=$('#dd-p');pp.scrollTop=pp.scrollHeight;setTimeout(()=>{$('#f-otro').focus({preventScroll:true});pp.scrollTop=pp.scrollHeight},120)}
   };
   $('#f-sub').onchange=e=>{F.sub=e.target.value;e.target.classList.remove('need');$('#e3').textContent=''};
   $('#f-otro').oninput=e=>{F.otro=e.target.value};
@@ -627,7 +642,7 @@ function validar(){
 async function enviar(){
   const er=validar();['e1','e2','e3','e4','e5'].forEach(k=>{const n=$('#'+k);if(n)n.textContent=er[k]||''});
   const prim=Object.keys(er)[0];
-  if(prim){$('#'+prim).closest('.sec').scrollIntoView({behavior:reduce?'auto':'smooth',block:'center'});return}
+  if(prim)return;
   const b=$('#send');b.disabled=true;b.querySelector('span').textContent='Enviando…';$('#te').innerHTML='';
   const emp=F.tipo==='empresa',otro=F.otro.trim().slice(0,60);
   const ser=emp?F.multi.map(x=>x==='Otro'&&otro?otro:x).join(', '):(F.servicio==='Otro'&&otro?otro:F.servicio);
