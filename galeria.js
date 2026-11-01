@@ -21,7 +21,7 @@ const GPAL={
   marfil:{n:'Marfil',bg:'#F5F2EE',tx:'#252528',ac:'#8B1A2A',luz:'clara',nota:'Alto contraste'},
   oliva:{n:'Oliva',bg:'#2F3626',tx:'#DCDCC4',ac:'#B9B67A',luz:'oscura',nota:'Suave'},
   salvia:{n:'Salvia',bg:'#E4E8DC',tx:'#4A5440',ac:'#7C8A64',luz:'clara',nota:'Suave'},
-  rosa:{n:'Rosa pastel',bg:'#F6E4E4',tx:'#6A4A50',ac:'#C98A94',luz:'clara',nota:'Suave'},
+  rosa:{n:'Rosa pastel',bg:'#FFBFC9',tx:'#5A242B',ac:'#B44858',luz:'clara',nota:'Suave'},
   palo:{n:'Palo de rosa',bg:'#3A1F28',tx:'#F8E9EC',ac:'#E7A9B6',luz:'oscura',nota:'Alto contraste'},
   mar:{n:'Mar profundo',bg:'#0E2A36',tx:'#EAF4F5',ac:'#7FC8C8',luz:'oscura',nota:'Alto contraste'},
   espuma:{n:'Espuma de mar',bg:'#DCEBEA',tx:'#2F5559',ac:'#4F9A9C',luz:'clara',nota:'Suave'},
@@ -165,7 +165,7 @@ async function vistaGaleria(){
 /* portada: dibuja el estilo elegido con portada.js (sin capa fija: la oscuridad es la que se eligió) */
 function gPortadaPinta(cfg,d){
   const cb=cfg.cubierta||{},fx=typeof cb.fx==='number'?cb.fx:(+d.foco.x||50)/100,fy=typeof cb.fy==='number'?cb.fy:(+d.foco.y||50)/100;
-  G.pc={estilo:cb.estilo||'centro',titulo:d.titulo,fecha:d.fecha,src:d.src,fx,fy,zoom:+cb.zoom>=1?+cb.zoom:1,ov:Math.max(0,Math.min(70,+cb.ov||0)),movimiento:cb.mov!==false,pie:d.n+' fotografías · Galería privada'};
+  G.pc={estilo:cb.estilo||'centro',titulo:d.titulo,fecha:d.fecha,src:d.src,fx,fy,zoom:+cb.zoom>=1?+cb.zoom:1,ov:Math.max(0,Math.min(70,+cb.ov||0)),tam:Math.max(40,Math.min(160,+cb.tam||100)),movimiento:cb.mov!==false,pie:d.n+' fotografías · Galería privada'};
   const box=document.getElementById('gcv');if(!box||!window.FaroPortada)return;
   G.pcv=FaroPortada.render(box,G.pc,{boton:true,movimiento:false});
   const m=()=>{const x=box.clientWidth<700;box.classList.toggle('fpph',x)};m();
@@ -302,9 +302,17 @@ async function gId3(url){
     return o;
   }catch(e){return null}
 }
+/* Título de la canción = nombre del archivo tal cual lo puso Faro (mayúsculas, guiones y espacios; en el servidor el espacio viaja como «_»).
+   Los archivos viejos, sin «_», traían guiones en lugar de espacios. Si la etiqueta del mp3 es el mismo título solo que con acentos, se muestran los acentos. */
+function gTituloCancion(nombre,id3){
+  let b=String(nombre||'').replace(/\.[^.]+$/,'');
+  b=(b.indexOf('_')>=0?b.replace(/_/g,' '):b.replace(/-+/g,' ')).replace(/\s+/g,' ').trim();
+  const f=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,' ').trim();
+  return id3&&f(id3)===f(b)&&!/www\.|\.com/i.test(id3)?String(id3).trim():b;
+}
 function gMusicaTitulo(){
   const m=(G.meta&&G.meta[G.mi])||{},l=G.lista&&G.lista[G.mi];if(!l||!$('#gmus'))return;
-  $('#gmt').textContent=m.titulo||l.nombre.replace(/\.[^.]+$/,'').replace(/[-_]+/g,' ');
+  $('#gmt').textContent=gTituloCancion(l.nombre,m.titulo);
   $('#gma').textContent=[m.artista,m.album].filter(Boolean).join(' · ');
   const cv=$('#gmcv');if(m.cover){cv.style.backgroundImage='url('+m.cover+')';cv.classList.add('im')}else{cv.style.backgroundImage='';cv.classList.remove('im')}
 }
