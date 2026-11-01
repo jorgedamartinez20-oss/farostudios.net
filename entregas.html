@@ -286,6 +286,8 @@ body.dots .top,.top{background:var(--borgona);-webkit-backdrop-filter:none;backd
 .top .btn.s{min-height:44px}
 @media (max-width:640px){.top{gap:10px}.brandn img{height:34px}.brandn .tag{font-size:1.0625rem;padding-left:10px;letter-spacing:.1em}.swp a{padding:9px 9px;font-size:.75rem}.swp{padding:3px}.top .btn.s span,.top #bsal{padding-inline:12px}}
 </style>
+<style id="faro-pre"></style>
+<script>(function(){try{var q=new URLSearchParams(location.search).get('previa')||'';var c=JSON.parse(localStorage.getItem(q?'faro_pal_'+q:'faro_pal_last')||'null');if(c&&/^#[0-9a-f]{6}$/i.test(c.bg)&&/^#[0-9a-f]{6}$/i.test(c.tx)){document.getElementById('faro-pre').textContent='html,body{background:'+c.bg+'!important;color:'+c.tx+'!important}'}}catch(e){}})()</script>
 <link rel="stylesheet" href="portada.css?v=20261031b">
 <link rel="stylesheet" href="galeria.css?v=20261031g">
 </head>
@@ -373,6 +375,7 @@ function descargar(id){const l=ST.links[id];if(!l||!l.url){toast('Podrás descar
 
 /* ---------- entrada ---------- */
 function pantallaLogin(msg){
+  const fp=document.getElementById('faro-pre');if(fp)fp.textContent='';
   APP.innerHTML=barraLogin()+'<div class="lg"><div class="lg-card"><div class="lg-top"><span class="iso"></span><h1>ENTREGAS</h1><p>Faro Studios</p></div>'
    +'<form class="lg-body" id="lf" autocomplete="on"><label>Correo<input id="lu" type="email" autocomplete="username" autocapitalize="none" placeholder="tucorreo@ejemplo.com" required></label>'
    +'<label>Contraseña<input id="lp" type="password" autocomplete="current-password" required></label>'
@@ -391,6 +394,7 @@ async function arrancar(){
   try{const r=await api('/rest/v1/rpc/en_mi_perfil',{method:'POST',body:{}});perfil=r.ok?await r.json():null}catch(e){if(!SES)return}
   if(!perfil||!perfil.tipo){salir('Tu acceso no está activo. Escríbenos por WhatsApp y lo revisamos.');return}
   ST.perfil=perfil;ST.proyectos=await rows('en_proyectos','select=*&order=creado.desc');
+  if(perfil.tipo!=='galeria'||ST.proyectos.length!==1){const fp=document.getElementById('faro-pre');if(fp)fp.textContent=''}
   if(ST.proyectos.length===1)return abrirProyecto(ST.proyectos[0].id,true);
   inicio();
 }
@@ -400,6 +404,7 @@ function ligarBarra(){const b=$('#bsal');if(b)b.onclick=()=>salir('')}
 
 /* ---------- lista de proyectos ---------- */
 function inicio(){
+  {const fp=document.getElementById('faro-pre');if(fp)fp.textContent=''}
   ST.p=null;document.body.className='dots';document.body.removeAttribute('style');
   const pr=ST.proyectos,t=ST.perfil.tipo;
   APP.innerHTML=barra()+'<main class="wrap"><div class="hello"><h2>Hola, '+esc(ST.perfil.nombre)+'</h2><p>'
@@ -414,7 +419,8 @@ function inicio(){
 async function abrirProyecto(id,unico){
   const p=ST.proyectos.find(x=>x.id===id);if(!p)return inicio();
   ST.p=p;ST.unico=!!unico;ST.sel=0;ST.borrador={v:'nota'};
-  APP.innerHTML='<div class="lg"><p style="position:relative;color:var(--muted)">Abriendo…</p></div>';
+  if(ST.perfil.tipo==='galeria'&&typeof gAplica==='function')gAplica(p.config||{});
+  APP.innerHTML='<div class="lg"><p style="position:relative;color:inherit;opacity:.6">Abriendo…</p></div>';
   const [arch,com,favs]=await Promise.all([rows('en_archivos','proyecto_id=eq.'+id+(PREVIA?'&habilitado=eq.true':'')+'&select=*&order=orden.asc,creado.asc'),rows('en_comentarios','proyecto_id=eq.'+id+'&order=creado.asc'),rows('en_favoritos','select=archivo_id')]);
   ST.arch=arch;ST.com=com;ST.favs=new Set(favs.map(f=>f.archivo_id));
   if(ST.perfil.tipo==='galeria')await vistaGaleria();else await vistaRevision();
@@ -597,7 +603,7 @@ function previaBoot(){
 })();
 </script>
 <script src="portada.js?v=20261031b"></script>
-<script src="galeria.js?v=20261031h"></script>
+<script src="galeria.js?v=20261031i"></script>
 <script>
 /* onda al hacer click en botones, tarjetas y filas */
 (function(){
