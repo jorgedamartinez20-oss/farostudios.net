@@ -241,3 +241,29 @@ html[data-theme="light"] .btn{box-shadow:0 3px 0 rgba(37,37,40,.18)}
 @media (prefers-reduced-motion:reduce){.farito .fill::before,.farito .fill::after{animation:none}.farito .fill,.bar i{transition:none}}
 #vista{display:grid;gap:var(--s3);min-width:0}
 .row2>.card{align-content:start}
+
+/* pestañas: íconos grandes, todas a la vista (sin deslizar) */
+.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));overflow:visible;gap:2px}
+.tabs button{flex:none;flex-direction:column;gap:4px;padding:8px 2px;min-height:64px;white-space:normal;position:relative;font-size:.68rem;line-height:1.1;text-align:center;letter-spacing:.01em}
+.tabs button .ico{width:27px;height:27px}
+.tabs .tl{display:none}.tabs .ts{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.tabs .nb{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;font-size:.66rem;padding:0 5px}
+.tabs button.lk{opacity:.7}
+@media(min-width:1000px){.tabs button{flex-direction:row;gap:9px;min-height:52px;font-size:.95rem;padding:6px 8px}.tabs .tl{display:inline}.tabs .ts{display:none}.tabs button .ico{width:22px;height:22px}.tabs .nb{position:static}}
+
+/* avance por pieza */
+.pb{display:grid;gap:12px;max-height:380px;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;min-width:0}
+.pbr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;align-items:center;min-width:0}
+.pbr .n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;display:flex;align-items:center;gap:8px}
+.pbr .n .ico{width:18px;height:18px;flex:none;color:var(--gold)}
+.pbr .s{font-size:.8rem;color:var(--mu);white-space:nowrap}
+.pbr .t{grid-column:1/-1;height:12px;border-radius:99px;background:rgba(128,128,128,.22);overflow:hidden;display:block}
+.pbr .t i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#8F7A48,#EAD9A6);transition:width .8s cubic-bezier(.2,.7,.2,1)}
+.pbr.ok .t i{background:linear-gradient(90deg,#2f7a4d,#58b57a)}
+.pbr.cam .t i{background:linear-gradient(90deg,#6b1325,#b02a45)}
+
+/* zona de carga del editor */
+.dz{display:grid;justify-items:center;gap:6px;text-align:center;border:2px dashed var(--ln);border-radius:18px;padding:30px 16px;cursor:pointer;background:var(--glass);transition:border-color .2s,background .2s}
+.dz .ico{width:34px;height:34px;color:var(--gold)}
+.dz.on,.dz:hover{border-color:var(--gold)}
+.dz b{font-size:1.1rem}

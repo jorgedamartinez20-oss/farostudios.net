@@ -165,7 +165,10 @@ async function arrancar(){
   APP.innerHTML='<div class="lg"><p class="mu">Cargando…</p></div>';
   let perfil=null;
   try{perfil=await rpc('en_mi_perfil')}catch(e){if(!SES)return}
-  if(!perfil||!perfil.tipo){salir('Tu acceso no está activo. Escríbenos por WhatsApp y lo revisamos.');return}
+  if(!perfil||!perfil.tipo){
+    let ed=null;try{ed=await rpc('pr_editor_yo')}catch(e){}
+    if(ed&&ed.user_id){ST.perfil=ed;return arrancarEditor(ed)}
+    salir('Tu acceso no está activo. Escríbenos por WhatsApp y lo revisamos.');return}
   if(perfil.tipo==='galeria'){pantallaAviso('Esta es tu galería','Tus fotos y videos están en otra dirección.','<a class="btn p" href="/entregas" style="min-height:54px">IR A MI GALERÍA</a><button class="btn g" data-a="salir">Salir</button>');return}
   ST.perfil=perfil;
   const ps=await rows('en_proyectos','select=*&order=creado.desc');
@@ -216,17 +219,19 @@ function pendientes(){
   const n={};const av=avance();
   n.pre=av.gz.filter(g=>g.last.estado==='en_revision'&&g.last.autor_rol==='faro').length;
   n.prod=(ST.p.estado==='en_revision')?av.pz.filter(x=>x.last.estado==='pendiente').length:0;
-  n.pagos=ST.fin&&ST.fin.visible!==false?ST.pagos.filter(x=>x.estado==='pendiente').length:0;
+  n.pagos=vePagos()&&ST.fin&&ST.fin.visible!==false?ST.pagos.filter(x=>x.estado==='pendiente').length:0;
   return n;
 }
-const TABS=[['resumen','Resumen','layers'],['marca','Mi marca','user'],['pre','Preproducción','bulb'],['prod','Producción','film'],['ent','Entregas','dl'],['pagos','Pagos y documentos','coin']];
+const TABS=[['resumen','Resumen','layers','Resumen'],['marca','Mi marca','user','Marca'],['pre','Preproducción','bulb','Pre'],['prod','Producción','film','Prod.'],['ent','Entregas','dl','Entregas'],['pagos','Pagos y documentos','coin','Pagos']];
+const sec2=()=>ST.perfil&&ST.perfil.rol==='secundario';
+const vePagos=()=>!ST.perfil||ST.perfil.ve_pagos!==false;
 function render(){
   if(!ST.p)return;
   const n=pendientes(),y=window.scrollY;
   const v=({resumen:vResumen,marca:vMarca,pre:vPre,prod:vProd,ent:vEnt,pagos:vPagos})[ST.tab]();
-  const subt=ST.perfil.nombre;
+  const subt=ST.perfil.empresa||ST.perfil.nombre;
   APP.innerHTML=cabecera()+'<main class="wrap"><div class="head"><span class="k">'+esc(subt)+'</span><h1>'+esc(ST.p.titulo)+'</h1>'+(ST.p.descripcion?'<p>'+esc(ST.p.descripcion)+'</p>':'')+'</div>'
-   +'<nav class="tabs" role="tablist" aria-label="Secciones">'+TABS.map(t=>'<button role="tab" data-a="tab" data-t="'+t[0]+'" aria-selected="'+(ST.tab===t[0])+'">'+ic(t[2])+t[1]+(n[t[0]]?'<span class="nb">'+n[t[0]]+'</span>':'')+'</button>').join('')+'</nav>'
+   +'<nav class="tabs" role="tablist" aria-label="Secciones">'+TABS.map(t=>{const lk=t[0]==='pagos'&&!vePagos();return '<button role="tab" data-a="tab" data-t="'+t[0]+'" aria-selected="'+(ST.tab===t[0])+'" aria-label="'+t[1]+(lk?' (sin acceso)':'')+'"'+(lk?' class="lk"':'')+'>'+ic(lk?'lock':t[2])+'<span class="tl">'+t[1]+'</span><span class="ts">'+t[3]+'</span>'+(n[t[0]]?'<span class="nb">'+n[t[0]]+'</span>':'')+'</button>'}).join('')+'</nav>'
    +'<section id="vista">'+v+'</section></main>'+(ST.tab==='prod'?barraEnvio():'');
   window.scrollTo(0,y);
   postRender();
@@ -248,7 +253,7 @@ function vResumen(){
   av.gz.filter(g=>g.last.estado==='en_revision'&&g.last.autor_rol==='faro').forEach(g=>todo.push(['pre','guiones','bulb','Revisar el guion “'+g.last.titulo+'” (versión '+g.last.version+')']));
   const por=av.pz.filter(x=>x.last.estado==='pendiente').length;
   if(ST.p.estado==='en_revision'&&por&&(e==='prod'||e==='entrega'))todo.push(['prod',null,'film',por+' pieza'+(por>1?'s':'')+' por revisar en la ronda '+ST.p.ronda]);
-  if(ST.fin&&ST.fin.visible!==false)ST.pagos.filter(x=>x.estado==='pendiente').forEach(x=>todo.push(['pagos',null,'coin','Pago pendiente: '+x.concepto+' · '+money(x.monto,ST.fin.moneda)]));
+  if(vePagos()&&ST.fin&&ST.fin.visible!==false)ST.pagos.filter(x=>x.estado==='pendiente').forEach(x=>todo.push(['pagos',null,'coin','Pago pendiente: '+x.concepto+' · '+money(x.monto,ST.fin.moneda)]));
   const mp=ST.miperfil||{};if(!mp.objetivos&&!mp.mensaje)todo.push(['marca',null,'user','Cuéntanos de tu marca: objetivos, mensaje y cómo habla']);
   const nombrePieza=id=>{const a=ST.arch.find(x=>x.id===id);return a?a.nombre:''};
   const evt=h=>{const d=h.detalle||'';const a=h.archivo_id?nombrePieza(h.archivo_id):'';
@@ -260,8 +265,23 @@ function vResumen(){
    +(ST.p.rondas_max||ST.p.ronda?'<p class="sm mu">'+ic('layers')+' '+(ST.p.rondas_max?'Ronda '+ST.p.ronda+' de '+ST.p.rondas_max+' incluidas':'Ronda '+ST.p.ronda+' · sin límite de rondas')+'</p>':'')+'</div></div>'
    +'<div class="row2"><div class="card"><h4>Lo que sigue de tu parte</h4>'+(todo.length?'<div class="todo">'+todo.map(t=>'<button data-a="ir" data-t="'+t[0]+'"'+(t[1]?' data-s="'+t[1]+'"':'')+'>'+ic(t[2])+'<span>'+esc(t[3])+'</span></button>').join('')+'</div>':'<p class="mu">'+ic('check')+' Todo al día. Te avisaremos cuando haya algo nuevo.</p>')+'</div>'
    +'<div class="card"><h4>Próximas fechas</h4>'+(prox.length?prox.map(fechaHtml).join(''):'<p class="mu">Aún no hay fechas agendadas.</p>')+(prox.length?'<button class="btn g sm" data-a="ir" data-t="pre" data-s="fechas">Ver todas las fechas</button>':'')+'</div></div>'
+   +graficaPiezas(av)
    +'<div class="card"><h4>Actividad reciente</h4>'+(ST.hist.length?'<ul class="tl">'+ST.hist.slice(0,8).map(h=>'<li>'+esc(evt(h))+'<small>'+esc(h.autor||'Faro')+' · '+hace(h.creado)+'</small></li>').join('')+'</ul>':'<p class="mu">Aquí verás todo lo que pase en tu proyecto: quién hizo qué y cuándo.</p>')+'</div>';
 }
+function progPieza(x){const l=x.last;
+  if(l.estado==='aprobado')return{p:100,t:'Aprobada',c:'ok'};
+  if(l.estado==='cambios')return{p:50,t:'Con cambios',c:'cam'};
+  return l.version>1?{p:75,t:'V'+l.version+' por revisar',c:''}:{p:25,t:'Por revisar',c:''}}
+function progGuion(g){const l=g.last;
+  if(l.estado==='aprobado')return{p:100,t:'Aprobado',c:'ok'};
+  return l.version>1?{p:60,t:'En ajustes',c:''}:{p:30,t:'Por revisar',c:''}}
+function graficaPiezas(av){
+  if(!av.gz.length&&!av.pz.length)return '';
+  const fila=(n,pr,ic2)=>'<div class="pbr '+pr.c+'"><span class="n">'+ic(ic2)+esc(n)+'</span><span class="s">'+pr.t+' · '+pr.p+'%</span><span class="t" role="progressbar" aria-valuenow="'+pr.p+'" aria-valuemin="0" aria-valuemax="100"><i style="width:'+pr.p+'%"></i></span></div>';
+  return '<div class="card"><h4>Avance por pieza</h4><div class="pb">'
+    +(av.gz.length?'<div class="grp">Guiones</div>'+av.gz.map(g=>fila(g.last.titulo,progGuion(g),'file')).join(''):'')
+    +(av.pz.length?'<div class="grp">Videos y fotos</div>'+av.pz.map(x=>fila(x.last.nombre,progPieza(x),x.last.tipo==='imagen'?'img':'film')).join(''):'')
+    +'</div></div>'}
 function fechaHtml(f){
   const d=new Date(String(f.fecha).slice(0,10)+'T12:00:00'),t=FECHA_T[f.tipo]||FECHA_T.otro;
   return '<div class="fecha"><div class="d"><b>'+d.getDate()+'</b><span>'+d.toLocaleDateString('es-GT',{month:'short'}).replace('.','')+'</span></div><div style="min-width:0"><b style="font-weight:700">'+esc(f.titulo)+'</b><div class="sm mu">'+ic(t[1])+' '+t[0]+(f.hora?' · '+hora(f.hora)+(f.hora_fin?' a '+hora(f.hora_fin):''):'')+(f.lugar?' · '+esc(f.lugar):'')+'</div>'+(f.nota?'<div class="sm mu">'+esc(f.nota)+'</div>':'')+(seguro(f.link)?'<a class="sm" href="'+esc(seguro(f.link))+'" target="_blank" rel="noopener">Abrir enlace</a>':'')+'</div></div>';
@@ -449,6 +469,7 @@ function pintaSala(){
 function barraEnvio(){
   const p=ST.p;if(p.estado!=='en_revision'||etapa()==='pre')return '';const pz=piezas();if(!pz.length)return '';
   const c=pz.filter(x=>x.last.estado==='cambios').length,a=pz.filter(x=>x.last.estado==='aprobado').length,pend=pz.length-a-c;
+  if(sec2())return '<div class="fin"><div class="in"><div class="l"><b>'+c+' con cambios · '+a+' aprobadas</b>La ronda la envía la persona principal de tu equipo</div></div></div>';
   return '<div class="fin"><div class="in"><div class="l"><b>'+c+' con cambios · '+a+' aprobadas</b>'+(pend?pend+' sin marcar':'Todo marcado')+'</div><button class="btn p" data-a="enviar">'+ic('send')+' ENVIAR RONDA</button></div></div>';
 }
 async function marcarPieza(e2){
@@ -484,17 +505,51 @@ async function enviarRonda(btn){
 function vEnt(){
   const e=etapa(),fl=finales(),ok=ST.p.estado==='aprobado'||ST.p.estado==='entregado';
   if(e!=='entrega'&&!fl.length)return '<div class="card lock">'+ic('lock')+'<h3>Tus archivos finales llegan aquí</h3><p class="mu" style="max-width:52ch">Cuando apruebes todas las piezas, subiremos los archivos finales en alta calidad para que los descargues.</p></div>';
-  const s=saldo();
-  return '<div class="card"><h3>Entregas</h3><p class="mu">'+(ok?'Tus archivos finales, en la mejor calidad. Descárgalos cuando quieras.':'Estos son tus archivos finales. Se habilitan para descarga cuando todo esté aprobado.')+'</p>'
-    +(s&&s.sal>0&&ST.fin.visible!==false?'<p class="sm chip warn" style="justify-self:start">'+ic('coin')+' Saldo pendiente: '+money(s.sal,ST.fin.moneda)+'</p>':'')+'</div>'
-    +(fl.length?'<div style="display:grid;gap:var(--s2)">'+fl.map(a=>{const lk=ST.links[a.id];
-      return '<div class="lin"><span class="av" style="border-radius:12px;width:44px;height:44px">'+ic(a.tipo==='video'?'film':a.tipo==='imagen'?'img':a.tipo==='audio'?'note':'file')+'</span><div><b style="overflow-wrap:anywhere">'+esc(a.nombre)+'</b><span class="sm mu">'+(a.version>1?'Versión '+a.version+' · ':'')+fechaC(a.creado)+'</span></div>'
-        +(lk&&lk.url?'<button class="btn o" data-a="bajar" data-id="'+a.id+'">'+ic('dl')+' Descargar</button>':'<button class="btn" disabled>'+ic('lock')+' Al aprobar todo</button>')+'</div>'}).join('')+'</div>'
+  const s=vePagos()?saldo():null;
+  const grupos=new Map();fl.forEach(a=>{const k=(a.carpeta||'').trim();(grupos.get(k)||grupos.set(k,[]).get(k)).push(a)});
+  const claves=[...grupos.keys()].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const puede=a=>{const lk=ST.links[a.id];return !!(lk&&lk.url)};
+  const lista=arr=>'<div style="display:grid;gap:8px">'+arr.map(a=>'<div class="lin"><span class="av" style="border-radius:12px;width:44px;height:44px">'+ic(a.tipo==='video'?'film':a.tipo==='imagen'?'img':a.tipo==='audio'?'note':'file')+'</span><div><b style="overflow-wrap:anywhere">'+esc(a.nombre)+'</b><span class="sm mu">'+(a.version>1?'Versión '+a.version+' · ':'')+fechaC(a.creado)+'</span></div>'
+    +(puede(a)?'<button class="btn o" data-a="bajar" data-id="'+a.id+'">'+ic('dl')+' Descargar</button>':'<button class="btn" disabled>'+ic('lock')+' Al aprobar todo</button>')+'</div>').join('')+'</div>';
+  const todos=fl.filter(puede).length;
+  return '<div class="card"><h3>Entregas</h3><p class="mu">'+(ok?'Tus archivos finales, en la mejor calidad y con sus nombres originales. Descárgalos uno por uno o por carpeta.':'Estos son tus archivos finales. Se habilitan para descarga cuando todo esté aprobado.')+'</p>'
+    +(s&&s.sal>0&&ST.fin.visible!==false?'<p class="sm chip warn" style="justify-self:start">'+ic('coin')+' Saldo pendiente: '+money(s.sal,ST.fin.moneda)+'</p>':'')
+    +(todos>1?'<button class="btn o" data-a="bajar-todo" data-k="*" style="justify-self:start">'+ic('dl')+' Descargar todo ('+todos+' archivos)</button>':'')+'</div>'
+    +(fl.length?claves.map(k=>{const arr=grupos.get(k).sort((a,b)=>(a.orden-b.orden)||String(a.nombre).localeCompare(String(b.nombre),'es',{numeric:true}));const n=arr.filter(puede).length;
+      return '<div class="card"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h4 style="flex:1;min-width:0;overflow-wrap:anywhere;margin:0">'+ic('folder')+' '+esc(k||'Archivos')+' <span class="mu sm">· '+arr.length+'</span></h4>'
+        +(n>1&&k?'<button class="btn sm" data-a="bajar-todo" data-k="'+esc(k)+'">'+ic('dl')+' Descargar carpeta</button>':'')+'</div>'+lista(arr)+'</div>'}).join('')
       :'<div class="card"><div class="empty">'+ic('dl')+'<p>Estamos preparando tus archivos finales.</p></div></div>');
+}
+/* descarga con el nombre original (no el del almacenamiento); en Chrome/Edge de escritorio se pueden crear las carpetas */
+const nomSeguro=n=>String(n||'archivo').replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').replace(/^\.+/,'').slice(0,180)||'archivo';
+async function bajarArchivo(a,dirHandle){
+  const lk=ST.links[a.id];if(!lk||!lk.url)throw new Error('Aún no disponible');
+  const r=await fetch(lk.url);if(!r.ok)throw new Error('No se pudo descargar '+a.nombre);
+  const nombre=nomSeguro(a.nombre);
+  if(dirHandle){
+    const fh=await dirHandle.getFileHandle(nombre,{create:true}),w=await fh.createWritable();
+    if(r.body&&r.body.pipeTo)await r.body.pipeTo(w);else{await w.write(await r.blob());await w.close()}
+    return}
+  const b=await r.blob(),u=URL.createObjectURL(b),x=document.createElement('a');x.href=u;x.download=nombre;document.body.append(x);x.click();x.remove();setTimeout(()=>URL.revokeObjectURL(u),30000);
+}
+async function bajarVarios(arr,porCarpetas){
+  arr=arr.filter(a=>ST.links[a.id]&&ST.links[a.id].url);if(!arr.length)return toast('Aún no hay archivos disponibles');
+  let raiz=null;
+  if(window.showDirectoryPicker){try{raiz=await window.showDirectoryPicker({mode:'readwrite'})}catch(e){if(e&&e.name==='AbortError')return}}
+  let n=0,mal=0;
+  for(const a of arr){
+    try{let dir=raiz;
+      if(raiz&&porCarpetas&&a.carpeta){for(const p of a.carpeta.split('/').map(nomSeguro).filter(Boolean))dir=await dir.getDirectoryHandle(p,{create:true})}
+      toast('Descargando '+(++n)+' de '+arr.length+'…');await bajarArchivo(a,dir)}
+    catch(e){mal++}
+    if(!raiz)await new Promise(r=>setTimeout(r,600));
+  }
+  toast(mal?('Listo, pero '+mal+' no se pudieron descargar'):(raiz?'Descarga lista en la carpeta que elegiste':'Descarga lista'+(arr.length>1?' · revisa tus Descargas':'')));
 }
 
 /* ---------- Pagos y documentos ---------- */
 function vPagos(){
+  if(!vePagos())return '<div class="card lock">'+ic('lock')+'<h3>Pagos y documentos</h3><p class="mu" style="max-width:52ch">Esta sección la ve solo la persona que Faro autoriza en tu equipo (contratos, facturas y saldos). Si necesitas verla, pídele acceso a Faro.</p><a class="btn o" href="'+WA+'" target="_blank" rel="noopener">PEDIR ACCESO POR WHATSAPP</a></div>';
   const s=saldo(),f=ST.fin,mon=f?f.moneda:'GTQ',vis=f&&f.visible!==false;
   let h='';
   if(vis&&s){h+='<div class="card"><h3>Pagos</h3><div class="kpis"><div class="kpi"><b>'+money(s.tot,mon)+'</b><span>Total</span></div><div class="kpi"><b style="color:var(--ok)">'+money(s.pag,mon)+'</b><span>Pagado</span></div><div class="kpi"><b>'+money(s.sal,mon)+'</b><span>Saldo</span></div></div>'
@@ -552,7 +607,9 @@ const ACT={
   'ir-t'(t){const pl=$('#pl');if(pl){pl.currentTime=+t.dataset.s;pl.play().catch(()=>{})}},
   async 'quitar-nota'(t){const r=await api('/rest/v1/en_comentarios?id=eq.'+t.dataset.id,{method:'DELETE',headers:{Prefer:'return=minimal'}});if(r.ok){ST.com=ST.com.filter(k=>k.id!==t.dataset.id);pintaSala()}else toast('No se pudo quitar')},
   enviar(){confirmarEnvio()},'enviar-ok'(t){enviarRonda(t)},
-  bajar(t){const l=ST.links[t.dataset.id];if(!l||!l.url)return toast('Podrás descargarlo cuando se apruebe todo');const a=document.createElement('a');a.href=l.url;a.rel='noopener';document.body.append(a);a.click();a.remove()},
+  async bajar(t){const a=ST.arch.find(x=>x.id===t.dataset.id),l=ST.links[t.dataset.id];if(!a||!l||!l.url)return toast('Podrás descargarlo cuando se apruebe todo');
+    try{toast('Descargando…');await bajarArchivo(a,null);toast('Descarga lista')}catch(e){const x=document.createElement('a');x.href=l.url;x.rel='noopener';document.body.append(x);x.click();x.remove()}},
+  'bajar-todo'(t){const k=t.dataset.k,fl=finales();bajarVarios(k==='*'?fl:fl.filter(a=>(a.carpeta||'').trim()===k),k==='*')},
   'pago-rep'(t){formPago(t.dataset.id||null)},
   async 'doc-ver'(t){const l=await enlaceKey(t.dataset.key);if(l)window.open(l.urlVer,'_blank','noopener');else toast('No se pudo abrir')}
 };
@@ -560,6 +617,80 @@ APP.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(!t||t.t
 APP.addEventListener('change',e=>{const t=e.target.closest('select[data-a]');if(t&&ACT[t.dataset.a])ACT[t.dataset.a](t,e)});
 document.addEventListener('click',e=>{const t=e.target.closest('.modal [data-a]');if(!t)return;const f=ACT[t.dataset.a];if(f)f(t,e)});
 document.addEventListener('submit',e=>{const f=e.target;if(f.id==='fmarca'){e.preventDefault();guardarMarca().then(ok=>{if(ok)render()})}});
+/* ---------- Modo editor (equipo de Faro): sube material; Faro lo publica ---------- */
+const ED={proys:[],sel:null,destino:'revision',cola:[],subidas:[],ocupado:false};
+const normBase=n=>String(n||'').replace(/\.[^.]+$/,'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[-_ ]*v\d{1,3}$/,'').replace(/[^a-z0-9]/g,'');
+const pesoTxt=b=>b>=1048576?(b/1048576).toFixed(b>=10485760?0:1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+async function arrancarEditor(ed){
+  ED.perfil=ed;
+  let ps=[];try{ps=await rpc('pr_editor_proyectos')}catch(e){}
+  ED.proys=Array.isArray(ps)?ps:[];
+  const g=sessionStorage.getItem('faro_ed_p');ED.sel=(ED.proys.find(x=>x.id===g)||ED.proys[0]||{}).id||null;
+  await cargarSubidas();renderEd();
+}
+async function cargarSubidas(){const r=await rows('en_archivos','subido_por=not.is.null&select=id,proyecto_id,nombre,version,rol,habilitado,tipo,creado&order=creado.desc&limit=40');ED.subidas=r||[]}
+const edProy=()=>ED.proys.find(x=>x.id===ED.sel);
+function edAccion(f){
+  const p=edProy();if(!p||ED.destino==='final')return{tipo:'final'};
+  const k=normBase(f.name),m=(p.piezas||[]).find(x=>normBase(x.nombre)===k);
+  return m?{tipo:'version',pieza:m.pieza,nombre:m.nombre,version:m.version+1}:{tipo:'nueva'};
+}
+function renderEd(){
+  const p=edProy(),porCliente={};ED.proys.forEach(x=>{(porCliente[x.cliente]=porCliente[x.cliente]||[]).push(x)});
+  const opts=Object.keys(porCliente).sort().map(c=>'<optgroup label="'+esc(c)+'">'+porCliente[c].map(x=>'<option value="'+x.id+'"'+(x.id===ED.sel?' selected':'')+'>'+esc(x.titulo)+'</option>').join('')+'</optgroup>').join('');
+  const q=ED.cola.map((c,i)=>{const a=c.accion;const t=a.tipo==='version'?'Nueva versión V'+a.version+' de '+esc(a.nombre):a.tipo==='nueva'?'Pieza nueva (V1)':'Archivo final';
+    return '<div class="lin"><span class="av" style="border-radius:12px;width:44px;height:44px">'+ic(tipoDeNombre(c.f.name)==='video'?'film':tipoDeNombre(c.f.name)==='imagen'?'img':'file')+'</span><div style="min-width:0"><b style="overflow-wrap:anywhere">'+esc(c.f.name)+'</b><span class="sm mu">'+pesoTxt(c.f.size)+' · '+t+'</span>'
+      +(c.estado==='sub'?'<span class="bar" style="display:block;margin-top:6px"><i style="width:'+Math.round((c.prog||0)*100)+'%"></i></span>':'')+(c.err?'<span class="sm" style="color:var(--cam,#d46)">'+esc(c.err)+'</span>':'')+'</div>'
+      +(c.estado==='ok'?chip(ic('check')+' Subido','ok'):c.estado==='sub'?chip('Subiendo…','gold'):'<button class="ib" data-a="ed-quitar" data-i="'+i+'" aria-label="Quitar">'+ic('x')+'</button>')+'</div>'}).join('');
+  const pend=ED.cola.filter(c=>c.estado!=='ok').length;
+  const proyNom=id=>{const x=ED.proys.find(z=>z.id===id);return x?x.cliente+' · '+x.titulo:''};
+  APP.innerHTML='<header class="top"><div class="in"><a href="/" aria-label="Faro Studios" style="display:flex">'+logoImgs()+'</a><span class="tg">EQUIPO</span><span class="sp"></span>'+temaBtn()+'<button class="ib" data-a="salir" aria-label="Salir">'+ic('out')+'</button></div></header>'
+   +'<main class="wrap"><div class="head"><span class="k">Editor</span><h1>Hola, '+esc(ED.perfil.nombre)+'</h1><p>Sube el material y Faro lo revisa y lo publica para el cliente.</p></div>'
+   +(ED.proys.length?'<div class="card f"><label>Proyecto<select id="edp" data-a="ed-proy" style="min-height:48px">'+opts+'</select></label>'
+     +(p?'<p class="sm mu">'+ic('layers')+' Ronda '+p.ronda+' · '+(p.piezas||[]).length+' pieza'+((p.piezas||[]).length===1?'':'s')+' en revisión</p>':'')+'</div>'
+     +'<div class="card"><div class="sub-tabs"><button class="pill" data-a="ed-dest" data-d="revision" aria-pressed="'+(ED.destino==='revision')+'">'+ic('film')+' Para revisión</button><button class="pill" data-a="ed-dest" data-d="final" aria-pressed="'+(ED.destino==='final')+'">'+ic('dl')+' Archivos finales</button></div>'
+     +'<label class="dz" id="dz"><input type="file" id="edf" multiple hidden>'+ic('plus')+'<b>Suelta aquí tus archivos</b><span class="mu sm">o toca para elegirlos · máximo 38 MB por archivo</span></label>'
+     +(ED.destino==='final'?'<label class="f">Carpeta (opcional)<input id="edc" maxlength="120" placeholder="Ej. Fotos/Grupo A"></label>':'<label class="f">¿Qué cambió en esta versión? (opcional)<input id="edn" maxlength="300" placeholder="Ej. Corregí el logo del cierre"></label>')
+     +(q?'<div style="display:grid;gap:8px">'+q+'</div>':'')
+     +(pend?'<button class="btn p" data-a="ed-subir" style="min-height:54px;letter-spacing:.12em"'+(ED.ocupado?' disabled':'')+'>'+ic('send')+' SUBIR '+pend+' ARCHIVO'+(pend>1?'S':'')+'</button>':'')
+     +(ED.destino==='revision'?'<p class="sm mu">Si el nombre se parece al de una pieza existente (por ejemplo “Spot-V3.mp4” y “Spot”), se sube como su nueva versión. Lo que subas queda <b>por publicar</b> hasta que Faro lo apruebe.</p>':'<p class="sm mu">Los finales se descargan con el nombre que tengan aquí. Quedan por publicar hasta que Faro los libere.</p>')+'</div>'
+     +'<div class="card"><h4>Tus subidas recientes</h4>'+(ED.subidas.length?'<div style="display:grid;gap:8px">'+ED.subidas.slice(0,15).map(u=>'<div class="lin"><div style="min-width:0"><b style="overflow-wrap:anywhere">'+esc(u.nombre)+(u.rol==='revision'&&u.version>1?' · V'+u.version:'')+'</b><span class="sm mu">'+esc(proyNom(u.proyecto_id))+' · '+hace(u.creado)+'</span></div>'+chip(u.habilitado?'Publicado':'Por publicar',u.habilitado?'ok':'warn')+'</div>').join('')+'</div>':'<p class="mu">Aún no has subido nada.</p>')+'</div>'
+     :'<div class="card"><div class="empty">'+ic('folder')+'<p>Todavía no hay proyectos de clientes abiertos. Avísale a Faro.</p></div></div>')+'</main>';
+  const inp=$('#edf'),dz=$('#dz');
+  if(inp){inp.onchange=()=>{agregaCola([...inp.files]);inp.value=''};
+    ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('on')}));
+    ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('on')}));
+    dz.addEventListener('drop',e=>{agregaCola([...(e.dataTransfer&&e.dataTransfer.files||[])])})}
+}
+function agregaCola(fs){
+  fs.forEach(f=>{if(!f.size)return;const c={f,estado:'',accion:edAccion(f)};if(f.size>38*1024*1024){c.err='Pesa '+pesoTxt(f.size)+': el máximo aquí es 38 MB. Envíaselo a Faro por otro medio.';c.estado='err'}ED.cola.push(c)});
+  ED.cola=ED.cola.filter(c=>c.estado!=='err'||c.err);renderEd();
+}
+function putFile(url,file,onp){return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open('PUT',url);x.setRequestHeader('Authorization','Bearer '+SES.access);x.setRequestHeader('Content-Type',file.type||'application/octet-stream');
+  x.upload.onprogress=e=>{if(e.lengthComputable)onp(e.loaded/e.total)};x.onload=()=>{if(x.status<300)res();else{let m='';try{m=JSON.parse(x.responseText).error}catch(e){}rej(new Error(m||'No se pudo subir ('+x.status+')'))}};x.onerror=()=>rej(new Error('Sin conexión. Intenta de nuevo.'));x.send(file)})}
+async function subirCola(){
+  const p=edProy();if(!p||ED.ocupado)return;
+  if(!p.carpeta){toast('Este cliente aún no tiene carpeta. Avísale a Faro.');return}
+  const carp=p.carpeta.endsWith('/')?p.carpeta:p.carpeta+'/',nota=(($('#edn')||{}).value||'').trim(),carpeta=(($('#edc')||{}).value||'').trim().replace(/\\/g,'/').replace(/^\/+|\/+$/g,'');
+  if(SES&&SES.exp-60000<Date.now())await refreshSes();
+  ED.ocupado=true;const pend=ED.cola.filter(c=>!c.estado);pend.forEach(c=>c.estado='cola');renderEd();
+  const un=async c=>{
+    c.estado='sub';c.prog=0;const key=carp+nombreArchivo(Date.now().toString(36)+'-'+c.f.name).slice(0,150);let t=0;
+    try{await putFile(FILES+'/p/subir?key='+encodeURIComponent(key),c.f,v=>{c.prog=v;if(Date.now()-t>250){t=Date.now();renderEd()}});
+      const a=c.accion;await rpc('pr_editor_registrar',{p_proyecto:p.id,p_key:key,p_nombre:c.f.name,p_tipo:tipoDeNombre(c.f.name)==='otro'?'otro':tipoDeNombre(c.f.name),p_pieza:a.tipo==='version'?a.pieza:null,p_nota:a.tipo==='final'?null:nota||null,p_rol:a.tipo==='final'?'final':'revision',p_carpeta:a.tipo==='final'?carpeta||null:null});
+      c.estado='ok'}catch(e){c.estado='';c.err=e.message||'No se pudo subir'}
+  };
+  const cola=[...pend];await Promise.all(Array.from({length:Math.min(3,cola.length)},async()=>{while(cola.length)await un(cola.shift())}));
+  ED.ocupado=false;await cargarSubidas();
+  try{const ps=await rpc('pr_editor_proyectos');if(Array.isArray(ps))ED.proys=ps}catch(e){}
+  const ok=pend.filter(c=>c.estado==='ok').length;ED.cola=ED.cola.filter(c=>c.estado!=='ok');renderEd();
+  toast(ok?ok+' archivo'+(ok>1?'s':'')+' subido'+(ok>1?'s':'')+'. Faro lo publicará.':'No se pudo subir. Revisa los avisos en rojo.');
+}
+Object.assign(ACT,{
+  'ed-proy'(t){ED.sel=t.value;try{sessionStorage.setItem('faro_ed_p',ED.sel)}catch(e){}ED.cola.forEach(c=>{if(!c.estado)c.accion=edAccion(c.f)});renderEd()},
+  'ed-dest'(t){ED.destino=t.dataset.d;ED.cola.forEach(c=>{if(!c.estado)c.accion=edAccion(c.f)});renderEd()},
+  'ed-quitar'(t){ED.cola.splice(+t.dataset.i,1);renderEd()},'ed-subir'(){subirCola()}
+});
 /* imágenes de referencia: miniatura con enlace temporal */
 new MutationObserver(()=>{$$('[data-img]:not([data-ok])').forEach(async el=>{el.dataset.ok='1';const l=await enlaceKey(el.dataset.img);if(l)el.innerHTML='<img src="'+esc(l.urlVer)+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover">'})}).observe(APP,{childList:true,subtree:true});
 /* al volver a la pestaña, trae lo nuevo sin molestar si está escribiendo */
