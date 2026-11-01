@@ -37,7 +37,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--pizarra);color:var(--marfil);padding:11px 20px;border-radius:14px;font-size:.9rem;z-index:99;box-shadow:0 12px 30px -8px rgba(0,0,0,.5)}
 
 /* ---------- entrada ---------- */
-.lg{position:relative;z-index:1;min-height:100vh;display:grid;place-items:center;padding:24px}
+.lg{position:relative;z-index:1;min-height:calc(100vh - 66px);display:grid;place-items:center;padding:24px}
 .lg-card{width:min(420px,100%);background:var(--card);border:1px solid var(--line);border-radius:26px;box-shadow:0 2px 0 var(--line),0 30px 50px -28px rgba(37,37,40,.55);overflow:hidden}
 .lg-top{background:var(--pizarra);color:var(--marfil);padding:30px 24px 24px;text-align:center}
 .lg-top .iso{height:58px;color:var(--oro)}
@@ -273,6 +273,18 @@ body.dots .pc,body.dots .lg-card{color:var(--ink)}
 body.dots .btn.p{background:linear-gradient(180deg,#8b1a2a,#651220);border-color:transparent;box-shadow:0 3px 0 #4a0d17}
 @media (prefers-reduced-motion:no-preference){html::before{animation:fondo 28s ease-in-out infinite alternate}}
 @keyframes fondo{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-2%,1.5%,0) scale(1.06)}}
+.nav{display:flex}
+.swp{position:relative;display:grid;grid-template-columns:1fr 1fr;border:1px solid rgba(245,242,238,.4);border-radius:999px;padding:4px}
+.swp::before{content:"";position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:#F5F2EE;box-shadow:0 8px 18px -6px rgba(0,0,0,.55)}
+.swp[data-on=academy]::before{transform:translateX(100%)}
+.swp a{position:relative;z-index:1;text-align:center;text-decoration:none;color:#F5F2EE;font:700 .86rem/1 'Lato',system-ui,sans-serif;padding:11px 18px;border-radius:999px;min-height:44px;display:grid;place-items:center}
+.swp a[aria-current=page]{color:#8B1A2A}
+body.dots .top,.top{background:var(--borgona);-webkit-backdrop-filter:none;backdrop-filter:none;border-bottom:0;padding:calc(10px + env(safe-area-inset-top,0px)) clamp(16px,4vw,48px) 10px;box-shadow:inset 0 -1px 0 rgba(184,160,106,.45),0 14px 34px -14px rgba(0,0,0,.7)}
+.brandn{display:flex;align-items:center;gap:14px;color:var(--marfil);text-decoration:none}
+.brandn img{height:42px;width:auto;display:block}
+.brandn .tag{font:400 1.375rem/1 var(--display);letter-spacing:.14em;padding-left:14px;border-left:1.5px solid var(--oro)}
+.top .btn.s{min-height:44px}
+@media (max-width:640px){.top{gap:10px}.brandn img{height:34px}.brandn .tag{font-size:1.0625rem;padding-left:10px;letter-spacing:.1em}.swp a{padding:9px 9px;font-size:.75rem}.swp{padding:3px}.top .btn.s span,.top #bsal{padding-inline:12px}}
 </style>
 <link rel="stylesheet" href="portada.css?v=20261018b">
 <link rel="stylesheet" href="galeria.css?v=20261018b">
@@ -361,7 +373,7 @@ function descargar(id){const l=ST.links[id];if(!l||!l.url){toast('Podrás descar
 
 /* ---------- entrada ---------- */
 function pantallaLogin(msg){
-  APP.innerHTML='<div class="lg"><div class="lg-card"><div class="lg-top"><span class="iso"></span><h1>ENTREGAS</h1><p>Faro Studios</p></div>'
+  APP.innerHTML=barraLogin()+'<div class="lg"><div class="lg-card"><div class="lg-top"><span class="iso"></span><h1>ENTREGAS</h1><p>Faro Studios</p></div>'
    +'<form class="lg-body" id="lf" autocomplete="on"><label>Correo<input id="lu" type="email" autocomplete="username" autocapitalize="none" placeholder="tucorreo@ejemplo.com" required></label>'
    +'<label>Contraseña<input id="lp" type="password" autocomplete="current-password" required></label>'
    +'<p class="err" id="le" role="alert">'+esc(msg||'')+'</p><button class="btn p" type="submit" id="lb">Entrar</button>'
@@ -382,7 +394,8 @@ async function arrancar(){
   if(ST.proyectos.length===1)return abrirProyecto(ST.proyectos[0].id,true);
   inicio();
 }
-function barra(extra){return '<header class="top"><span class="iso"></span><div><b>ENTREGAS</b><small>Faro Studios</small></div><span class="sp"></span>'+(extra||'')+'<button class="btn s" id="bsal">'+ic('out')+' Salir</button></header>'}
+function barra(extra){return '<header class="top"><a class="brandn" href="/" aria-label="Faro Studios, ir al inicio"><img src="logo-nav.png" alt="Faro Studios"><span class="tag">ENTREGAS</span></a><span class="sp"></span>'+'<nav class="swp" data-on="studios" aria-label="Faro"><a href="https://farostudios.net" aria-current="page">Studios</a><a href="https://academy.farostudios.net">Academy</a></nav>'+(extra||'')+'<button class="btn s" id="bsal">'+ic('out')+' Salir</button></header>'}
+function barraLogin(){return '<header class="top"><a class="brandn" href="/" aria-label="Faro Studios, ir al inicio"><img src="logo-nav.png" alt="Faro Studios"><span class="tag">ENTREGAS</span></a><span class="sp"></span><nav class="swp" data-on="studios" aria-label="Faro"><a href="https://farostudios.net" aria-current="page">Studios</a><a href="https://academy.farostudios.net">Academy</a></nav></header>'}
 function ligarBarra(){const b=$('#bsal');if(b)b.onclick=()=>salir('')}
 
 /* ---------- lista de proyectos ---------- */
