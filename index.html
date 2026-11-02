@@ -4525,31 +4525,29 @@ window.rebuildPortfolio=function(){
       v.addEventListener('waiting',()=>{if(!alive||!ok||v.readyState>=3)return;done=false;ov.classList.remove('done');ov.classList.add('re');lab.textContent='Cargando…';setP(0)});
       v.src=u;const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{})};
     const useLite=async()=>{
+      /* la copia ligera se reproduce en cuanto llegan los primeros segundos (sin bajarla completa); el original llega después, en segundo plano */
+      let usado=false;
       try{
-        const ohP=fetch(u,{method:'HEAD'}).catch(()=>null),ac=new AbortController(),to6=setTimeout(()=>ac.abort(),2500);   /* si la copia ligera aún se está preparando, no se espera: se usa el original */
-        const r=await fetch(lu,{signal:ac.signal});clearTimeout(to6);if(!r.ok||!r.body)throw 0;
-        const tot=+r.headers.get('content-length')||0,rd=r.body.getReader(),parts=[];let got=0;
-        /* la copia ligera es mucho más chica que el original: solo se usa si de verdad lo es */
-        const oh=await ohP,ot=oh&&oh.ok?+oh.headers.get('content-length')||0:0;
-        if((ot&&tot&&tot>=ot*.85)||(!ot&&tot>30e6)){rd.cancel();throw 0}
-        const sm=document.createElement('video');sm.preload='metadata';sm.muted=true;sm.src=lu;sm.addEventListener('loadedmetadata',()=>{sampled=false;sample(lu,sm.duration);sm.removeAttribute('src');sm.load()});
-        for(;;){const x=await rd.read();if(x.done)break;parts.push(x.value);got+=x.value.length;if(!alive){rd.cancel();return}
-          if(tot){setP(got/tot);sub.textContent=mb(got)+' de '+mb(tot)}else{sub.textContent=mb(got)}}
+        const ac=new AbortController(),to6=setTimeout(()=>ac.abort(),2500);   /* si la copia ligera aún se está preparando, no se espera: se usa el original */
+        const [r,oh]=await Promise.all([fetch(lu,{method:'HEAD',signal:ac.signal}),fetch(u,{method:'HEAD'}).catch(()=>null)]);clearTimeout(to6);
         if(!alive)return;
-        const url=URL.createObjectURL(new Blob(parts,{type:'video/mp4'}));dg.addEventListener('close',()=>URL.revokeObjectURL(url),{once:true});
-        v.muted=true;v.src=url;
-        v.addEventListener('loadedmetadata',()=>{if(v.videoWidth&&v.videoHeight){vp.dataset.real=1;setAr(v.videoWidth/v.videoHeight)}},{once:true});
-        v.addEventListener('playing',()=>{ok=true;fin()},{once:true});
-        const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{});
-        /* con la copia ya descargada se toman los 6 fotogramas al instante y se dejan ver un momento antes de abrir el video */
-        const quick=()=>new Promise(res=>{const sv=document.createElement('video');sv.muted=true;sv.preload='auto';sv.src=url;let k=0;const dn=()=>{sv.removeAttribute('src');sv.load();res()};
-          sv.addEventListener('loadedmetadata',()=>{if(!sv.duration||!isFinite(sv.duration))return dn();sv.currentTime=sv.duration*(.05+.9*k/Math.max(1,tiles.length-1))});
-          sv.addEventListener('seeked',()=>{try{const t=tiles[k],c=document.createElement('canvas');c.width=240;c.height=Math.round(240*(sv.videoHeight||9)/(sv.videoWidth||16));c.getContext('2d').drawImage(sv,0,0,c.width,c.height);t.classList.remove('wait');t.innerHTML='';t.appendChild(c);shown++}catch(e){}
-            k++;if(k>=tiles.length)dn();else sv.currentTime=sv.duration*(.05+.9*k/Math.max(1,tiles.length-1))});
-          sv.addEventListener('error',dn)});
-        Promise.race([quick(),new Promise(r=>setTimeout(r,1800))]).then(()=>setTimeout(fin,shown?900:200));
-        /* en segundo plano llega el original (con sonido y calidad completa) y toma el lugar sin cortar la reproducción */
-        const vo=mk();vo.controls=true;vo.className='vo';vo.src=u;vp.insertBefore(vo,v);
+        const tot=+r.headers.get('content-length')||0,ot=oh&&oh.ok?+oh.headers.get('content-length')||0:0;
+        /* la copia ligera es mucho más chica que el original: solo se usa si de verdad lo es */
+        if(!r.ok||(ot&&tot&&tot>=ot*.85)||(!ot&&tot>30e6))throw 0;
+        usado=true;
+        const upd=()=>{if(done)return;const d=v.duration;if(d&&isFinite(d)&&v.buffered.length)setP(v.buffered.end(v.buffered.length-1)/Math.min(d,5))};
+        ['progress','loadeddata','timeupdate'].forEach(e=>v.addEventListener(e,upd));
+        v.muted=true;
+        v.addEventListener('loadedmetadata',()=>{if(v.videoWidth&&v.videoHeight){vp.dataset.real=1;setAr(v.videoWidth/v.videoHeight)}sample(lu,v.duration)},{once:true});
+        const caer=setTimeout(()=>{if(alive&&!ok){v.removeAttribute('src');v.load();useDirect()}},6000);   /* si en 6 s no arranca, se pasa al original */
+        v.addEventListener('error',()=>{if(alive&&!ok){clearTimeout(caer);v.removeAttribute('src');v.load();useDirect()}},{once:true});
+        v.addEventListener('playing',()=>{ok=true;clearTimeout(caer);fin()},{once:true});
+        v.src=lu;const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{});
+        /* ya reproduciendo la copia: se empieza a bajar el original (con sonido y calidad completa) y toma el lugar sin cortar la reproducción */
+        await new Promise(res=>{if(ok)return res();v.addEventListener('playing',res,{once:true});setTimeout(res,6500)});
+        if(!alive||!ok)return;
+        await new Promise(r=>setTimeout(r,1200));if(!alive)return;
+        const vo=mk();vo.controls=true;vo.className='vo';vo.preload='auto';vo.src=u;vp.insertBefore(vo,v);
         hq.hidden=false;hq.textContent='Sonido y calidad completa · 0%';
         const chk=()=>{if(!alive||!vo.parentNode)return;const d=vo.duration;
           if(d&&isFinite(d)&&vo.buffered.length){const e=vo.buffered.end(vo.buffered.length-1);hq.textContent='Sonido y calidad completa · '+Math.min(100,Math.round(e/d*100))+'%';
@@ -4559,7 +4557,7 @@ window.rebuildPortfolio=function(){
           const go=()=>{vo.classList.add('on');vo.muted=false;if(pl){const q=vo.play();if(q&&q.catch)q.catch(()=>{})}v.pause();v.style.display='none';hq.textContent='Calidad completa y sonido listos';setTimeout(()=>{hq.hidden=true},1800);cur=vo};
           if(vo.seeking)vo.addEventListener('seeked',go,{once:true});else go()};
         vo.addEventListener('loadedmetadata',chk,{once:true});
-      }catch(e){if(alive&&!done){v.removeAttribute('src');useDirect()}}
+      }catch(e){if(alive&&!done&&!usado){v.removeAttribute('src');useDirect()}}
     };
     let cur=v;
     const stop=()=>{alive=false;try{v.pause();cur.pause()}catch(e){}};
